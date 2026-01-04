@@ -4,8 +4,8 @@ import { AuthController } from "../controllers/auth.controller";
 let authController = new AuthController();
 const router = Router();
 
-router.post("/register", authController.createUser)
-router.post("/login", authController.loginUser)
+router.post("/register", authController.register);
+router.post("/login", authController.login);
 // add remaning routes like login, logout, etc.
 
 export default router;
