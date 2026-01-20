@@ -50,4 +50,12 @@ export class UserService {
         const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '30d' }); // 30 days
         return { token, user }
     }
+    async getUserbyId(userId: string){
+        const user = await userRepository.getUserById(userId);
+        if(!user){
+            throw new HttpError(404, "user not found");
+        }
+        return user;
+    }
 }
+

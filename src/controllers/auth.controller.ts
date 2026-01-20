@@ -1,7 +1,8 @@
 import { UserService } from "../services/user.service";
 import { CreateUserDTO, LoginUserDTO } from "../dtos/user.dto";
 import { Request, Response } from "express";
-import z from "zod";
+import z, { success } from "zod";
+import { error } from "node:console";
 let userService = new UserService();
 export class AuthController {
     async register(req: Request, res: Response) {
@@ -44,5 +45,19 @@ export class AuthController {
             );
         }
     }
+
+    async getUserbyId(req: Request, res: Response){
+      try{
+        const userId = req.user?._id;
+        const user = await userService.getUserbyId(userId);
+        return res.status(200).json(
+            {success: true, message:"user fetched successfully", data: user}
+        )
+    } catch (error: Error | any) {
+            return res.status(error.statusCode ?? 500).json(
+                { success: false, message: error.message || "Internal Server Error" }
+            );
+        }
     
+    }
 }
