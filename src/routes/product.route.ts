@@ -1,16 +1,26 @@
 import { Router } from "express";
-import { adminMiddleware } from "../middleware/authorized.middleware";
+import {
+  authorizedMiddleware,
+  adminMiddleware,
+} from "../middleware/authorized.middleware";
 import { uploads } from "../middleware/upload.middleware";
 import { ProductController } from "../controllers/product.controller";
 let productController = new ProductController();
 const router = Router();
 
-router.post("/createProduct", adminMiddleware, productController.createProduct);
+router.post(
+  "/createProduct",
+  authorizedMiddleware,
+  adminMiddleware,
+  productController.createProduct,
+);
 router.put("/:id", adminMiddleware, productController.updateProduct);
 router.get("/:id", adminMiddleware, productController.getProductById);
 router.delete("/:id", adminMiddleware, productController.deleteProduct);
+
 router.put(
   "/update-image",
+  authorizedMiddleware,
   adminMiddleware, //should be logined
   uploads.single("image"),
   productController.updateProduct,
