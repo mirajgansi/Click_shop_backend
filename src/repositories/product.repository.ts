@@ -53,28 +53,28 @@ export class ProductRepository implements IProductRepository {
     });
   }
 
-  // ✅ recently added products
+  //  recently added products
   async getRecentlyAdded(limit = 10) {
     return await ProductModel.find({ available: true })
       .sort({ createdAt: -1 })
       .limit(limit);
   }
 
-  // ✅ trending = highest selling
+  //  trending = highest selling
   async getTrending(limit = 10) {
     return await ProductModel.find({ available: true })
       .sort({ totalSold: -1 })
       .limit(limit);
   }
 
-  // ✅ popular = most viewed (simple)
+  // popular = most viewed (simple)
   async getMostPopular(limit = 10) {
     return await ProductModel.find({ available: true })
       .sort({ viewCount: -1 })
       .limit(limit);
   }
 
-  // ✅ top rated = average rating + count (more fair)
+  // top rated = average rating + count (more fair)
   async getTopRated(limit = 10) {
     return await ProductModel.find({ available: true })
       .sort({ averageRating: -1, reviewCount: -1 })

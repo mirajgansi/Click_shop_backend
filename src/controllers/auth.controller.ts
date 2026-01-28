@@ -90,7 +90,7 @@ export class AuthController {
       }
       if (req.file) {
         // if new image uploaded through multer
-        parsedData.data.imageUrl = `/uploads/${req.file.filename}`;
+        parsedData.data.image = `/uploads/${req.file.filename}`;
       }
       const updatedUser = await userService.updateUser(userId, parsedData.data);
       return res.status(200).json({

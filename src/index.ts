@@ -4,7 +4,7 @@ import { connectDatabase } from "./database/mongodb";
 import { PORT } from "./config";
 import authRoutes from "./routes/auth.route";
 import productRoutes from "./routes/product.route";
-
+import cartRoutes from "./routes/cart.route";
 import cors from "cors";
 import path from "path";
 
@@ -23,7 +23,7 @@ app.use((req, _res, next) => {
 });
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
-
+app.use("/api/cart", cartRoutes);
 app.get("/", (req: Request, res: Response) => {
   return res
     .status(200)
