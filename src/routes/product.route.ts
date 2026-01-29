@@ -14,8 +14,8 @@ router.post(
   adminMiddleware,
   productController.createProduct,
 );
-router.put("/:id", adminMiddleware, productController.updateProduct);
-router.get("/:id", adminMiddleware, productController.getProductById);
+router.put("/:id", productController.updateProduct);
+router.get("/:id", productController.getProductById);
 router.delete("/:id", adminMiddleware, productController.deleteProduct);
 
 router.put(
