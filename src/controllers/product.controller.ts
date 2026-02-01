@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import z from "zod";
 import { ProductService } from "../services/product.service";
 import { CreateProductDto, UpdateProductDto } from "../dtos/product.dto";
-import { UpdateUserDto } from "../dtos/user.dto";
 
 const productService = new ProductService();
 

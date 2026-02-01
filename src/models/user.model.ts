@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema, Types } from "mongoose";
 import { UserType } from "../types/user.type";
 const UserSchema: Schema = new Schema<UserType>(
   {
@@ -9,11 +9,12 @@ const UserSchema: Schema = new Schema<UserType>(
     phoneNumber: { type: String, required: false },
     location: { type: String, required: false },
     gender: { type: String, required: false },
+    DOB: { type: String, required: false },
     // firstName: { type: String },
     // lastName: { type: String },
     role: {
       type: String,
-      enum: ["user", "admin"],
+      enum: ["user", "admin", "driver"],
       default: "user",
     },
   },

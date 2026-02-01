@@ -7,11 +7,13 @@ export const CreateUserDTO = UserSchema.pick({
   email: true,
   username: true,
   password: true,
+  image: true,
 })
   .extend(
     // add new attribute to zod
     {
       confirmPassword: z.string().min(6),
+      role: z.enum(["user", "admin", "driver"]).default("user"),
     },
   )
   .refine(
@@ -30,5 +32,5 @@ export const LoginUserDTO = z.object({
 });
 export type LoginUserDTO = z.infer<typeof LoginUserDTO>;
 
-export const UpdateUserDto = UserSchema.partial();
-export type UpdateUserDto = z.infer<typeof UpdateUserDto>;
+export const UpdateUserDTO = UserSchema.partial(); // all attributes optional
+export type UpdateUserDTO = z.infer<typeof UpdateUserDTO>;

@@ -16,4 +16,5 @@ router.put(
   uploads.single("image"),
   authController.updateUser,
 );
+
 export default router;

@@ -1,5 +1,5 @@
 import { UserService } from "../services/user.service";
-import { CreateUserDTO, LoginUserDTO, UpdateUserDto } from "../dtos/user.dto";
+import { CreateUserDTO, LoginUserDTO, UpdateUserDTO } from "../dtos/user.dto";
 import { Request, Response } from "express";
 import z, { success } from "zod";
 import { error } from "node:console";
@@ -15,6 +15,7 @@ export class AuthController {
           .status(400)
           .json({ success: false, message: z.prettifyError(parsedData.error) });
       }
+
       const userData: CreateUserDTO = parsedData.data;
       const newUser = await userService.createUser(userData);
       console.log(
@@ -82,7 +83,7 @@ export class AuthController {
           .status(400)
           .json({ success: false, message: "User ID not provided" });
       }
-      const parsedData = UpdateUserDto.safeParse(req.body);
+      const parsedData = UpdateUserDTO.safeParse(req.body);
       if (!parsedData.success) {
         return res
           .status(400)

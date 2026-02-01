@@ -9,8 +9,8 @@ export const UserSchema = z.object({
   phoneNumber: z.string().max(10).optional(),
   location: z.string().optional(),
   gender: z.enum(["male", "female", "other"]).optional(),
-  DateOfBirth: z.string().optional(),
-  role: z.enum(["user", "admin"]).default("user"),
+  DOB: z.string().optional(),
+  role: z.enum(["user", "admin", "driver"]).default("user"),
   image: z.string().optional(),
 });
 

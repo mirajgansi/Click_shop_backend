@@ -1,4 +1,4 @@
-import { CreateUserDTO, LoginUserDTO, UpdateUserDto } from "../dtos/user.dto";
+import { CreateUserDTO, LoginUserDTO, UpdateUserDTO } from "../dtos/user.dto";
 import { UserRepository } from "../repositories/user.repository";
 import bcryptjs from "bcryptjs";
 import { HttpError } from "../errors/http-error";
@@ -6,9 +6,13 @@ import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config";
 
 let userRepository = new UserRepository();
+type Creator = {
+  id: string;
+  role?: "admin" | "user";
+};
 
 export class UserService {
-  async createUser(data: CreateUserDTO) {
+  async createUser(data: CreateUserDTO, createdBy?: Creator) {
     // business logic before creating user
     const emailCheck = await userRepository.getUserByEmail(data.email);
     if (emailCheck) {
@@ -22,8 +26,19 @@ export class UserService {
     const hashedPassword = await bcryptjs.hash(data.password, 10); // 10 - complexity
     data.password = hashedPassword;
 
+    const role =
+      createdBy?.role === "admin"
+        ? (data.role ?? "user") // admin can choose, default user
+        : "user";
     // create user
-    const newUser = await userRepository.createUser(data);
+    const payload = {
+      email: data.email,
+      username: data.username,
+      password: hashedPassword,
+      role,
+      // imageUrl: data.imageUrl ?? undefined, // if you have it
+    };
+    const newUser = await userRepository.createUser(payload);
     return newUser;
   }
 
@@ -59,7 +74,7 @@ export class UserService {
     return user;
   }
 
-  async updateUser(userId: string, data: UpdateUserDto) {
+  async updateUser(userId: string, data: UpdateUserDTO) {
     const user = await userRepository.getUserById(userId);
     if (!user) {
       throw new HttpError(404, "User not found");

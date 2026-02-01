@@ -5,6 +5,7 @@ import { PORT } from "./config";
 import authRoutes from "./routes/auth.route";
 import productRoutes from "./routes/product.route";
 import cartRoutes from "./routes/cart.route";
+import adminUserRoutes from "./routes/admin/user.route";
 import cors from "cors";
 import path from "path";
 
@@ -24,12 +25,14 @@ app.use((req, _res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api/admin/users", adminUserRoutes);
+
 app.get("/", (req: Request, res: Response) => {
   return res
     .status(200)
     .json({ success: "true", message: "Welcome to the API" });
 });
-app.use("uploads", express.static(path.join(__dirname, "../uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.use((err: any, req: Request, res: Response, _next: any) => {
   console.error("🔥 ERROR:", err);
