@@ -32,8 +32,31 @@ export class ProductService {
     return product;
   }
 
-  async getAllProducts() {
-    return await productRepository.getAllProducts();
+  async getAllProducts({
+    page,
+    size,
+    search,
+  }: {
+    page?: string;
+    size?: string;
+    search?: string;
+  }) {
+    const currentPage = page ? parseInt(page) : 1;
+    const pageSize = size ? parseInt(size) : 10;
+    const currentSearch = search || "";
+    const { products, total } = await productRepository.getAllProducts({
+      page: currentPage,
+      size: pageSize,
+      search: currentSearch,
+    });
+    const pagination = {
+      page: currentPage,
+      size: pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+    };
+
+    return { products, pagination };
   }
 
   async getProductsByCategory(category: string) {

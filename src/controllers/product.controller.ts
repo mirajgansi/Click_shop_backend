@@ -4,7 +4,11 @@ import { ProductService } from "../services/product.service";
 import { CreateProductDto, UpdateProductDto } from "../dtos/product.dto";
 
 const productService = new ProductService();
-
+interface QueryParams {
+  page?: string;
+  size?: string;
+  search?: string;
+}
 export class ProductController {
   // ---------------- CREATE (ADMIN ONLY) ----------------
   async createProduct(req: Request, res: Response) {
@@ -65,9 +69,14 @@ export class ProductController {
     }
   }
 
-  async getAllProducts(_req: Request, res: Response) {
+  async getAllProducts(req: Request, res: Response) {
     try {
-      const products = await productService.getAllProducts();
+      const { page, size, search }: QueryParams = req.query;
+      const products = await productService.getAllProducts({
+        page,
+        size,
+        search,
+      });
       return res.status(200).json({
         success: true,
         message: "Products fetched successfully",
