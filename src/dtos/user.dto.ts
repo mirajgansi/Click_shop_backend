@@ -8,6 +8,10 @@ export const CreateUserDTO = UserSchema.pick({
   username: true,
   password: true,
   image: true,
+  location: true,
+  phoneNumber: true,
+  DOB: true,
+  gender: true,
 })
   .extend(
     // add new attribute to zod

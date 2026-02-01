@@ -4,7 +4,11 @@ import z from "zod";
 import { AdminUserService } from "../../services/admin/user.service";
 
 let adminUserService = new AdminUserService();
-
+interface QueryParams {
+  page?: string;
+  size?: string;
+  search?: string;
+}
 export class AdminUserController {
   async createUser(req: Request, res: Response, next: NextFunction) {
     try {
@@ -33,7 +37,9 @@ export class AdminUserController {
 
   async getAllUsers(req: Request, res: Response, next: NextFunction) {
     try {
-      const users = await adminUserService.getAllUsers();
+      const { page, size, search }: QueryParams = req.query;
+
+      const users = await adminUserService.getAllUsers({ page, size, search });
       return res
         .status(200)
         .json({ success: true, data: users, message: "All Users Retrieved" });

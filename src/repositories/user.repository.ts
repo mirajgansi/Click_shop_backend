@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { QueryFilter, Types } from "mongoose";
 import { UserModel, IUser } from "../models/user.model";
 export interface IUserRepository {
   getUserByEmail(email: string): Promise<IUser | null>;
@@ -7,7 +7,15 @@ export interface IUserRepository {
   // 5 common database queries for entity
   createUser(userData: Partial<IUser>): Promise<IUser>;
   getUserById(id: string): Promise<IUser | null>;
-  getAllUsers(): Promise<IUser[]>;
+  getAllUsers({
+    page,
+    size,
+    search,
+  }: {
+    page: number;
+    size: number;
+    search?: string;
+  }): Promise<{ users: IUser[]; total: number }>;
   updateUser(id: string, updateData: Partial<IUser>): Promise<IUser | null>;
   deleteUser(id: string): Promise<boolean>;
 }
@@ -31,10 +39,37 @@ export class UserRepository implements IUserRepository {
     const user = await UserModel.findById(id);
     return user;
   }
-  async getAllUsers(): Promise<IUser[]> {
-    const users = await UserModel.find();
-    return users;
+  async getAllUsers({
+    page,
+    size,
+    search,
+  }: {
+    page: number;
+    size: number;
+    search?: string;
+  }): Promise<{ users: IUser[]; total: number }> {
+    const filter: any = search
+      ? {
+          $or: [
+            { username: { $regex: search, $options: "i" } },
+            { email: { $regex: search, $options: "i" } },
+            { phoneNumber: { $regex: search, $options: "i" } },
+            { location: { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
+
+    const [users, total] = await Promise.all([
+      UserModel.find(filter)
+        .select("email username role location phoneNumber DOB gender")
+        .skip((page - 1) * size)
+        .limit(size),
+      UserModel.countDocuments(filter),
+    ]);
+
+    return { users, total };
   }
+
   async updateUser(
     id: string,
     updateData: Partial<IUser>,

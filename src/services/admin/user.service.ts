@@ -27,9 +27,30 @@ export class AdminUserService {
     return newUser;
   }
 
-  async getAllUsers() {
-    const users = await userRepository.getAllUsers();
-    return users;
+  async getAllUsers({
+    page,
+    size,
+    search,
+  }: {
+    page?: string;
+    size?: string;
+    search?: string;
+  }) {
+    const currentPage = page ? parseInt(page) : 1;
+    const pageSize = size ? parseInt(size) : 10;
+    const currentSearch = search || "";
+    const { users, total } = await userRepository.getAllUsers({
+      page: currentPage,
+      size: pageSize,
+      search: currentSearch,
+    });
+    const pagination = {
+      page: currentPage,
+      size: pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+    };
+    return { users, pagination };
   }
 
   async deleteUser(id: string) {
