@@ -13,12 +13,14 @@ export class ProductController {
   // ---------------- CREATE (ADMIN ONLY) ----------------
   async createProduct(req: Request, res: Response) {
     try {
-      const adminId = req.user?._id; // from auth middleware
+      const adminId = req.user?._id;
       if (!adminId) {
         return res
           .status(401)
           .json({ success: false, message: "Unauthorized" });
       }
+
+      // ✅ build payload FIRST (same code style)
 
       const parsedData = CreateProductDto.safeParse(req.body);
       if (!parsedData.success) {
@@ -26,12 +28,10 @@ export class ProductController {
           .status(400)
           .json({ success: false, message: z.prettifyError(parsedData.error) });
       }
-
-      // optional: if product image uploaded by multer
       if (req.file) {
-        parsedData.data.imageUrl = `/uploads/${req.file.filename}`;
+        // if new image uploaded through multer
+        parsedData.data.image = `/uploads/${req.file.filename}`;
       }
-
       const product = await productService.createProduct(
         parsedData.data,
         adminId,
@@ -197,7 +197,7 @@ export class ProductController {
       }
 
       if (req.file) {
-        parsedData.data.imageUrl = `/uploads/${req.file.filename}`;
+        parsedData.data.image = `/uploads/${req.file.filename}`;
       }
 
       const updated = await productService.updateProduct(

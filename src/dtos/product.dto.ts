@@ -1,28 +1,35 @@
 import { z } from "zod";
 import { ProductSchema } from "../types/product.type";
-
-export const CreateProductDto = z.object({
-  name: z.string().min(2),
-  price: z.number().nonnegative(),
-  description: z.string().optional(),
-  manufacturer: z.string().min(1),
-  manufactureDate: z.string().min(1),
-  expireDate: z.string().min(1),
-  nutritionalInfo: z.string().min(1),
-  category: z.string().min(1),
-  imageUrl: z.string().min(1),
+export const CreateProductDto = ProductSchema.pick({
+  name: true,
+  description: true,
+  price: true,
+  manufacturer: true,
+  manufactureDate: true,
+  expireDate: true,
+  nutritionalInfo: true,
+  category: true,
+  available: true,
+  inStock: true,
+  sku: true,
+  image: true,
+}).extend({
+  price: z.coerce.number().positive(),
+  available: z.coerce.boolean().default(true),
+  inStock: z.coerce.number().int().min(0).default(0),
+  sku: z.string().optional(),
 });
 
 // export const updateProductDto = z.object({
 //   name: z.string().min(2).optional(),
 //   price: z.number().nonnegative().optional(),
 //   description: z.string().optional(),
-//   manufacturer: z.string().min(1).optional(),
-//   manufactureDate: z.string().min(1).optional(),
-//   expireDate: z.string().min(1).optional(),
-//   nutritionalInfo: z.string().min(1).optional(),
-//   category: z.string().min(1).optional(),
-//   imageUrl: z.string().min(1).optional(),
+//   manufacturer: true.optional(),
+//   manufactureDate: true.optional(),
+//   expireDate: true.optional(),
+//   nutritionalInfo: true.optional(),
+//   category: true.optional(),
+//   imageUrl: true.optional(),
 //   reviewCount: z.number().min(0).optional(),
 //   averageRating: z.number().min(0).max(5).optional(),
 // });

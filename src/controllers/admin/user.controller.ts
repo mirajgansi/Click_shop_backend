@@ -78,7 +78,7 @@ export class AdminUserController {
     }
   }
 
-  async deleteUser(req: Request, res: Response, next: NextFunction) {
+  async deleteUser(req: Request, res: Response) {
     try {
       const userId = req.params.id;
       const deleted = await adminUserService.deleteUser(userId);

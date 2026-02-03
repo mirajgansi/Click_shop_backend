@@ -9,15 +9,13 @@ let productController = new ProductController();
 const router = Router();
 
 router.post(
-  "/createProduct",
+  "/",
   authorizedMiddleware,
   adminMiddleware,
+  uploads.single("image"),
   productController.createProduct,
 );
-router.put("/:id", productController.updateProduct);
-router.get("/:id", productController.getProductById);
 router.delete("/:id", adminMiddleware, productController.deleteProduct);
-
 router.put(
   "/update-image",
   authorizedMiddleware,
@@ -26,6 +24,13 @@ router.put(
   productController.updateProduct,
 );
 
+router.put(
+  "/:id",
+  authorizedMiddleware,
+  adminMiddleware,
+  productController.updateProduct,
+);
+router.get("/:id", productController.getProductById);
 router.get("/", productController.getAllProducts);
 router.get("/category/:category", productController.getProductsByCategory);
 router.get("/recent", productController.getRecentlyAdded);
