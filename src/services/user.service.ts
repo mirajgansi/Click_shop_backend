@@ -117,4 +117,31 @@ export class UserService {
     await sendEmail(user.email, "Password Reset", html);
     return user;
   }
+
+  async deleteMe(userId: string) {
+    const deleted = await userRepository.deleteUser(userId);
+    if (!deleted) {
+      throw new HttpError(404, "User not found");
+    }
+    return true;
+  }
+  //reset password token
+  async resetPassword(token?: string, newPassword?: string) {
+    try {
+      if (!token || !newPassword) {
+        throw new HttpError(400, "Token and new password are required");
+      }
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      const userId = decoded.id;
+      const user = await userRepository.getUserById(userId);
+      if (!user) {
+        throw new HttpError(404, "User not found");
+      }
+      const hashedPassword = await bcryptjs.hash(newPassword, 10);
+      await userRepository.updateUser(userId, { password: hashedPassword });
+      return user;
+    } catch (error) {
+      throw new HttpError(400, "Invalid or expired token");
+    }
+  }
 }

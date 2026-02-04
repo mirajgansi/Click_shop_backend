@@ -110,20 +110,44 @@ export class AuthController {
     try {
       const { email } = req.body;
       const user = await userService.sendResetPasswordEmail(email);
+      return res.status(200).json({
+        success: true,
+        data: user,
+        message: "Password reset email sent",
+      });
+    } catch (error: Error | any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
+    }
+  }
+  async deleteMyAccount(req: Request, res: Response) {
+    try {
+      const userId = req.user?._id;
+
+      if (!userId) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+      }
+
+      const deleted = await userService.deleteMe(userId);
+
+      if (!deleted) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+
       return res
         .status(200)
-        .json({
-          success: true,
-          data: user,
-          message: "Password reset email sent",
-        });
-    } catch (error: Error | any) {
-      return res
-        .status(error.statusCode || 500)
-        .json({
-          success: false,
-          message: error.message || "Internal Server Error",
-        });
+        .json({ success: true, message: "Account deleted" });
+    } catch (error: any) {
+      return res.status(error.statusCode ?? 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
     }
   }
 }
