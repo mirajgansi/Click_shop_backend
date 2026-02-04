@@ -6,6 +6,8 @@ import authRoutes from "./routes/auth.route";
 import productRoutes from "./routes/product.route";
 import cartRoutes from "./routes/cart.route";
 import adminUserRoutes from "./routes/admin/user.route";
+import orderRoutes from "./routes/order.route";
+
 import cors from "cors";
 import path from "path";
 
@@ -31,7 +33,7 @@ app.get("/", (req: Request, res: Response) => {
     .status(200)
     .json({ success: "true", message: "Welcome to the API" });
 });
-
+app.use("/api/orders", orderRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.use((err: any, req: Request, res: Response, _next: any) => {

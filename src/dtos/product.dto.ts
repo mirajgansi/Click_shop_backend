@@ -20,19 +20,6 @@ export const CreateProductDto = ProductSchema.pick({
   sku: z.string().optional(),
 });
 
-// export const updateProductDto = z.object({
-//   name: z.string().min(2).optional(),
-//   price: z.number().nonnegative().optional(),
-//   description: z.string().optional(),
-//   manufacturer: true.optional(),
-//   manufactureDate: true.optional(),
-//   expireDate: true.optional(),
-//   nutritionalInfo: true.optional(),
-//   category: true.optional(),
-//   imageUrl: true.optional(),
-//   reviewCount: z.number().min(0).optional(),
-//   averageRating: z.number().min(0).max(5).optional(),
-// });
 export const UpdateProductDto = ProductSchema.partial();
 
 export type CreateProductDto = z.infer<typeof CreateProductDto>;
