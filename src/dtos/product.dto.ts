@@ -13,6 +13,7 @@ export const CreateProductDto = ProductSchema.pick({
   sku: true,
   image: true,
 }).extend({
+  images: z.array(z.string()).optional(),
   price: z.coerce.number().positive(),
   inStock: z.coerce.number().int().min(0).default(0),
   sku: z.string().optional(),

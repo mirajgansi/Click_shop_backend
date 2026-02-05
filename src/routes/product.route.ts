@@ -24,7 +24,7 @@ router.delete(
 router.put(
   "/update-image",
   authorizedMiddleware,
-  adminMiddleware, //should be logined
+  adminMiddleware,
   uploads.array("image", 3),
   productController.updateProduct,
 );
@@ -42,5 +42,4 @@ router.get("/recent", productController.getRecentlyAdded);
 router.get("/trending", productController.getTrending);
 router.get("/popular", productController.getMostPopular);
 router.get("/top-rated", productController.getTopRated);
-router.get("/:id", productController.getProductById);
 export default router;

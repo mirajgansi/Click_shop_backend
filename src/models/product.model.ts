@@ -10,7 +10,7 @@ const ProductSchema = new Schema<ProductType>(
     price: { type: Number, required: true, min: 0, index: true },
     category: { type: String, required: true, index: true },
     image: { type: String, required: true },
-
+    images: [{ type: String }],
     manufacturer: { type: String, required: true },
     manufactureDate: { type: String, required: true },
     expireDate: { type: String, required: true },

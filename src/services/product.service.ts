@@ -9,17 +9,11 @@ const productRepository = new ProductRepository();
 export class ProductService {
   // ---------------- CREATE (ADMIN) ----------------
   async createProduct(data: CreateProductDto, adminId: string) {
-    // (optional) validate admin exists
-    // const admin = await userRepository.getUserById(adminId);
-    // if (!admin || admin.role !== "admin") throw new HttpError(403, "Only admin can add products");
-
     const nameCheck = await productRepository.getProductByName(data.name);
     if (nameCheck) throw new HttpError(409, "Product name already in use");
 
-    // createdBy + cached stats are set by server
     const newProduct = await productRepository.createProduct({
       ...data,
-      //   createdBy: adminId,
     });
 
     return newProduct;
@@ -42,7 +36,8 @@ export class ProductService {
     search?: string;
   }) {
     const currentPage = page ? parseInt(page) : 1;
-    const pageSize = size ? parseInt(size) : 10;
+    const pageSize =
+      size === "all" ? Number.MAX_SAFE_INTEGER : size ? parseInt(size) : 10;
     const currentSearch = search || "";
     const { products, total } = await productRepository.getAllProducts({
       page: currentPage,

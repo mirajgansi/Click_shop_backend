@@ -37,6 +37,7 @@ export class ProductController {
       }
 
       parsedData.data.image = `/uploads/${files[0].filename}`; // ✅ required field
+      parsedData.data.images = files.map((f) => `/uploads/${f.filename}`);
 
       // optional gallery:
       // parsedData.data.images = files.map((f) => `/uploads/${f.filename}`);

@@ -21,7 +21,9 @@ export const ProductSchema = z.object({
 
   category: z.string().min(1, "Category is required"),
 
-  image: z.string().optional(),
+  image: z.string().min(1, "Image is required"),
+  images: z.array(z.string()).optional(),
+
   // available: z.boolean().default(true),
 
   // inStock: z
