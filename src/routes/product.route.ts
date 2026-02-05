@@ -12,15 +12,20 @@ router.post(
   "/",
   authorizedMiddleware,
   adminMiddleware,
-  uploads.single("image"),
+  uploads.array("image", 3),
   productController.createProduct,
 );
-router.delete("/:id", adminMiddleware, productController.deleteProduct);
+router.delete(
+  "/:id",
+  authorizedMiddleware,
+  adminMiddleware,
+  productController.deleteProduct,
+);
 router.put(
   "/update-image",
   authorizedMiddleware,
   adminMiddleware, //should be logined
-  uploads.single("image"),
+  uploads.array("image", 3),
   productController.updateProduct,
 );
 

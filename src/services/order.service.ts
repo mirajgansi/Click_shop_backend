@@ -6,7 +6,6 @@ import { CreateOrderDto } from "../dtos/order.dto";
 import { HttpError } from "../errors/http-error";
 
 type CreateOrderInput = {
-  paymentMethod?: "cod" | "stripe" | "paypal";
   shippingFee?: number;
   shippingAddress?: any;
   notes?: string;
@@ -72,6 +71,11 @@ export class OrderService {
                 totalRevenue: lineTotal,
               },
             },
+            { session },
+          );
+          await ProductModel.updateOne(
+            { _id: p._id, inStock: { $gt: 0 } },
+            { $set: { available: true } },
             { session },
           );
 

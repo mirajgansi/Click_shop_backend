@@ -20,18 +20,27 @@ export class ProductController {
           .json({ success: false, message: "Unauthorized" });
       }
 
-      // ✅ build payload FIRST (same code style)
-
       const parsedData = CreateProductDto.safeParse(req.body);
       if (!parsedData.success) {
+        return res.status(400).json({
+          success: false,
+          message: z.prettifyError(parsedData.error),
+        });
+      }
+
+      const files = req.files as Express.Multer.File[] | undefined;
+
+      if (!files || files.length === 0) {
         return res
           .status(400)
-          .json({ success: false, message: z.prettifyError(parsedData.error) });
+          .json({ success: false, message: "Image is required" });
       }
-      if (req.file) {
-        // if new image uploaded through multer
-        parsedData.data.image = `/uploads/${req.file.filename}`;
-      }
+
+      parsedData.data.image = `/uploads/${files[0].filename}`; // ✅ required field
+
+      // optional gallery:
+      // parsedData.data.images = files.map((f) => `/uploads/${f.filename}`);
+
       const product = await productService.createProduct(
         parsedData.data,
         adminId,

@@ -9,13 +9,11 @@ export const CreateProductDto = ProductSchema.pick({
   expireDate: true,
   nutritionalInfo: true,
   category: true,
-  available: true,
   inStock: true,
   sku: true,
   image: true,
 }).extend({
   price: z.coerce.number().positive(),
-  available: z.coerce.boolean().default(true),
   inStock: z.coerce.number().int().min(0).default(0),
   sku: z.string().optional(),
 });

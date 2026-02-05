@@ -6,7 +6,6 @@ export const ProductSchema = z.object({
   description: z.string().min(10, "Description must be at least 10 characters"),
 
   price: z.coerce.number().positive("Price must be greater than 0"),
-  available: z.coerce.boolean().default(true),
   inStock: z.coerce.number().int("Stock must be an integer").min(0).default(0),
   manufacturer: z.string().min(1, "Manufacturer is required"),
 

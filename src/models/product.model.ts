@@ -16,7 +16,6 @@ const ProductSchema = new Schema<ProductType>(
     expireDate: { type: String, required: true },
     nutritionalInfo: { type: String, required: true },
 
-    available: { type: Boolean, default: true },
     inStock: { type: Number, default: 0, min: 0 },
 
     totalSold: { type: Number, default: 0 },
