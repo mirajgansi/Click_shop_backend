@@ -14,7 +14,7 @@ const OrderItemSchema = new Schema(
 
 const ShippingAddressSchema = new Schema(
   {
-    fullName: { type: String },
+    userName: { type: String },
     phone: { type: String },
     address1: { type: String },
     address2: { type: String },

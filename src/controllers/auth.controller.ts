@@ -122,27 +122,28 @@ export class AuthController {
       });
     }
   }
-  async deleteMyAccount(req: Request, res: Response) {
+  async deleteMe(req: Request, res: Response) {
     try {
       const userId = req.user?._id;
-
       if (!userId) {
         return res
           .status(401)
           .json({ success: false, message: "Unauthorized" });
       }
 
-      const deleted = await userService.deleteMe(userId);
-
-      if (!deleted) {
+      const password = req.body?.password;
+      if (!password) {
         return res
-          .status(404)
-          .json({ success: false, message: "User not found" });
+          .status(400)
+          .json({ success: false, message: "Password is required" });
       }
 
-      return res
-        .status(200)
-        .json({ success: true, message: "Account deleted" });
+      await userService.deleteMe(userId, password);
+
+      return res.status(200).json({
+        success: true,
+        message: "Account deleted successfully",
+      });
     } catch (error: any) {
       return res.status(error.statusCode ?? 500).json({
         success: false,

@@ -5,6 +5,7 @@ import { HttpError } from "../errors/http-error";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config";
 import { sendEmail } from "../config/email";
+import bcrypt from "bcryptjs";
 
 let userRepository = new UserRepository();
 type Creator = {
@@ -118,11 +119,17 @@ export class UserService {
     return user;
   }
 
-  async deleteMe(userId: string) {
+  async deleteMe(userId: string, password: string) {
+    const user = await userRepository.getUserById(userId); // create if missing
+    if (!user) throw new HttpError(404, "User not found");
+
+    // if user.password is the hashed password
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) throw new HttpError(400, "Password is incorrect");
+
     const deleted = await userRepository.deleteUser(userId);
-    if (!deleted) {
-      throw new HttpError(404, "User not found");
-    }
+    if (!deleted) throw new HttpError(404, "User not found");
+
     return true;
   }
   //reset password token

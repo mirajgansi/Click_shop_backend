@@ -4,12 +4,14 @@ import { CartModel } from "../models/cart.model";
 import { ProductModel } from "../models/product.model"; // ✅ adjust path/name if different
 import { CreateOrderDto } from "../dtos/order.dto";
 import { HttpError } from "../errors/http-error";
+import { OrderRepository } from "../repositories/order.repository";
 
 type CreateOrderInput = {
   shippingFee?: number;
   shippingAddress?: any;
   notes?: string;
 };
+const orderRepository = new OrderRepository();
 
 export class OrderService {
   async createFromCart(userId: string, input: CreateOrderInput) {
@@ -152,8 +154,35 @@ export class OrderService {
   }
 
   // Admin
-  async getAllOrders() {
-    return OrderModel.find().sort({ createdAt: -1 });
+  async getAllOrders({
+    page,
+    size,
+    search,
+  }: {
+    page?: string;
+    size?: string;
+    search?: string;
+  }) {
+    const currentPage = page ? parseInt(page) : 1;
+    const pageSize = size === "all" ? 1000000 : size ? parseInt(size) : 10;
+
+    const currentSearch = search || "";
+
+    const { orders, total } = await orderRepository.findAll({
+      page: currentPage,
+      size: pageSize,
+      search: currentSearch,
+    });
+
+    return {
+      orders,
+      pagination: {
+        page: currentPage,
+        size: pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    };
   }
 
   // Admin

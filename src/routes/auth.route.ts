@@ -16,7 +16,7 @@ router.put(
   uploads.single("image"),
   authController.updateUser,
 );
-router.delete("/me", authorizedMiddleware, authController.deleteMyAccount);
+router.delete("/me", authorizedMiddleware, authController.deleteMe);
 
 router.post("/request-password-reset", authController.requestPasswordChange);
 
