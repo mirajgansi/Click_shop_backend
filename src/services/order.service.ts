@@ -5,11 +5,17 @@ import { ProductModel } from "../models/product.model"; // ✅ adjust path/name 
 import { CreateOrderDto } from "../dtos/order.dto";
 import { HttpError } from "../errors/http-error";
 import { OrderRepository } from "../repositories/order.repository";
+import { UserRepository } from "../repositories/user.repository";
+import { UserModel } from "../models/user.model";
 
 type CreateOrderInput = {
   shippingFee?: number;
   shippingAddress?: any;
   notes?: string;
+};
+type AuthUser = {
+  _id: string;
+  role: "admin" | "user" | "driver";
 };
 const orderRepository = new OrderRepository();
 
@@ -185,23 +191,143 @@ export class OrderService {
     };
   }
 
-  // Admin
   async updateStatus(
     orderId: string,
-    payload: { status: string; paymentStatus?: string },
+    payload: {
+      status: string;
+      paymentStatus?: string;
+      driverId?: string | null;
+    },
   ) {
-    const order = await OrderModel.findByIdAndUpdate(
-      orderId,
-      {
-        status: payload.status,
-        ...(payload.paymentStatus
-          ? { paymentStatus: payload.paymentStatus }
-          : {}),
-      },
-      { new: true },
+    if (!orderId) throw new HttpError(400, "Order id is required");
+
+    // 1) fetch order first (needed for rules)
+    const order = await OrderModel.findById(orderId);
+    if (!order) throw new HttpError(404, "Order not found");
+
+    // 2) if status is shipped => driver is required
+    if (payload.status === "shipped" && !payload.driverId) {
+      throw new HttpError(400, "Driver must be assigned before shipping");
+    }
+
+    // 3) if driverId is provided => validate it is a driver user
+    let driverObjectId: any = undefined;
+    if (payload.driverId) {
+      if (!mongoose.Types.ObjectId.isValid(payload.driverId)) {
+        throw new HttpError(400, "Invalid driverId");
+      }
+
+      const driver = await UserModel.findById(payload.driverId);
+      if (!driver) throw new HttpError(404, "Driver not found");
+      if (driver.role !== "driver") {
+        throw new HttpError(400, "Selected user is not a driver");
+      }
+
+      driverObjectId = driver._id;
+    }
+
+    // 4) Build update object
+    const update: any = {
+      status: payload.status,
+    };
+
+    if (payload.paymentStatus) update.paymentStatus = payload.paymentStatus;
+
+    // only set driverId if provided (or explicitly null to unassign)
+    if (payload.driverId === null) update.driverId = null;
+    else if (driverObjectId) update.driverId = driverObjectId;
+
+    // (optional) if cancelled => unassign driver automatically
+    if (payload.status === "cancelled") {
+      update.driverId = null;
+    }
+
+    // 5) Update and return
+    const updated = await OrderModel.findByIdAndUpdate(orderId, update, {
+      new: true,
+    });
+
+    if (!updated) throw new HttpError(404, "Order not found");
+    return updated;
+  }
+
+  async cancelMyOrder(orderId: string, userId: string) {
+    if (!orderId) throw new HttpError(400, "Order id is required");
+    if (!userId) throw new HttpError(401, "Unauthorized");
+
+    const order = await OrderModel.findById(orderId);
+    if (!order) throw new HttpError(404, "Order not found");
+
+    // must be the owner
+    if (String(order.userId) !== String(userId)) {
+      throw new HttpError(403, "You cannot cancel this order");
+    }
+
+    // only pending can be cancelled
+    if (order.status !== "pending") {
+      throw new HttpError(
+        400,
+        "Order cannot be cancelled after status changes",
+      );
+    }
+    for (const it of order.items as any[]) {
+      await ProductModel.updateOne(
+        { _id: it.productId },
+        { $inc: { inStock: it.quantity } },
+      );
+    }
+    order.status = "cancelled";
+    await order.save();
+
+    return order;
+  }
+  async assignDriver(orderId: string, driverId: string, userId: string) {
+    if (!userId) throw new HttpError(401, "Unauthorized");
+
+    if (!mongoose.Types.ObjectId.isValid(orderId))
+      throw new HttpError(400, "Invalid order id");
+    if (!mongoose.Types.ObjectId.isValid(driverId))
+      throw new HttpError(400, "Invalid driverId");
+
+    const order = await OrderModel.findById(orderId);
+    if (!order) throw new HttpError(404, "Order not found");
+
+    // Optional rule: don’t assign if cancelled/delivered
+    if (order.status === "cancelled" || order.status === "delivered") {
+      throw new HttpError(
+        400,
+        `Cannot assign driver when order is ${order.status}`,
+      );
+    }
+
+    const driver = await UserModel.findById(driverId);
+    if (!driver) throw new HttpError(404, "Driver not found");
+    if (driver.role !== "driver")
+      throw new HttpError(400, "Selected user is not a driver");
+
+    const updated = await orderRepository.assignDriver(orderId, driverId);
+    if (!updated) throw new HttpError(404, "Order not found");
+    return updated;
+  }
+
+  //driver assing orders
+  async getMyAssignedOrders(driverId: string, page = 1, size = 10) {
+    if (!driverId) throw new HttpError(401, "Unauthorized");
+
+    const { orders, total } = await orderRepository.findAssignedToDriver(
+      driverId,
+      page,
+      size,
     );
 
-    if (!order) throw new HttpError(404, "Order not found");
-    return order;
+    return {
+      orders,
+      pagination: {
+        page,
+        size,
+        total,
+        totalPages: Math.ceil(total / size),
+      },
+    };
   }
 }

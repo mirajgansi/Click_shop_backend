@@ -21,10 +21,31 @@ export const UpdateOrderDto = OrderSchema.partial();
  * ADMIN: Update Status DTO (recommended)
  *  safer than allowing full partial updates
  */
-export const UpdateOrderStatusDto = z.object({
-  status: OrderStatusSchema,
-  paymentStatus: z.enum(["unpaid", "paid"]).optional(),
+
+export const UpdateOrderStatusDto = z
+  .object({
+    status: OrderStatusSchema,
+    paymentStatus: z.enum(["unpaid", "paid"]).optional(),
+
+    driverId: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    // require driver when shipping
+    if (data.status === "shipped" && !data.driverId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["driverId"],
+        message: "driverId is required when status is shipped",
+      });
+    }
+
+    // optional: prevent driverId on cancelled/pending if you want
+    // if (data.status === "cancelled" && data.driverId) { ... }
+  });
+export const AssignDriverDto = z.object({
+  driverId: z.string().min(1, "driverId is required"),
 });
+export type AssignDriverDto = z.infer<typeof AssignDriverDto>;
 
 export type CreateOrderDto = z.infer<typeof CreateOrderDto>;
 export type UpdateOrderDto = z.infer<typeof UpdateOrderDto>;

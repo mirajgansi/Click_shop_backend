@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { OrderService } from "../services/order.service";
-import { UpdateOrderStatusDto } from "../dtos/order.dto";
+import { AssignDriverDto, UpdateOrderStatusDto } from "../dtos/order.dto";
 import { HttpError } from "../errors/http-error";
 
 const oderService = new OrderService();
@@ -123,6 +123,80 @@ export class OrderController {
         success: true,
         message: "Order updated",
         data: updated,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode ?? 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
+    }
+  }
+
+  async cancelMyOrder(req: Request, res: Response) {
+    try {
+      const userId = req.user!._id;
+      const updated = await oderService.cancelMyOrder(req.params.id, userId);
+
+      return res.json({
+        success: true,
+        message: "Order cancelled",
+        data: updated,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode ?? 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
+    }
+  }
+
+  async assignDriver(req: Request, res: Response) {
+    try {
+      const parsed = AssignDriverDto.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid input",
+          issues: parsed.error.issues,
+        });
+      }
+
+      const adminId = req.user?._id;
+      if (!adminId) throw new HttpError(401, "Unauthorized");
+
+      const updated = await oderService.assignDriver(
+        req.params.id,
+        parsed.data.driverId,
+        adminId,
+      );
+
+      return res.json({
+        success: true,
+        message: "Driver assigned",
+        data: updated,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode ?? 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
+    }
+  }
+
+  async getMyAssignedOrders(req: Request, res: Response) {
+    try {
+      const driverId = req.user?._id;
+      if (!driverId) throw new HttpError(401, "Unauthorized");
+
+      const page = Number(req.query.page ?? "1");
+      const size = Number(req.query.size ?? "10");
+
+      const data = await oderService.getMyAssignedOrders(driverId, page, size);
+
+      return res.json({
+        success: true,
+        message: "Assigned orders fetched",
+        ...data,
       });
     } catch (error: any) {
       return res.status(error.statusCode ?? 500).json({

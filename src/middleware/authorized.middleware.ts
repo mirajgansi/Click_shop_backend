@@ -65,3 +65,25 @@ export const adminMiddleware = async (
       .json({ succes: false, message: err.message });
   }
 };
+
+export const driverMiddleware = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    // req.user is added by authorizedMiddleware
+    // any function after authorizedMiddleware can use req.user
+    if (!req.user) {
+      throw new HttpError(401, "Unauthorized no user info");
+    }
+    if (req.user.role !== "driver") {
+      throw new HttpError(403, "Forbidden not driver");
+    }
+    return next();
+  } catch (err: Error | any) {
+    return res
+      .status(err.statusCode || 500)
+      .json({ succes: false, message: err.message });
+  }
+};

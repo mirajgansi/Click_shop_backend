@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { OrderModel } from "../models/order.model";
 
 export class OrderRepository {
@@ -76,5 +76,32 @@ export class OrderRepository {
     update: { status: string; paymentStatus?: string },
   ) {
     return OrderModel.findByIdAndUpdate(orderId, update, { new: true });
+  }
+
+  async assignDriver(orderId: string, driverId: string) {
+    return OrderModel.findByIdAndUpdate(
+      orderId,
+      { driverId: new mongoose.Types.ObjectId(driverId) },
+      { new: true },
+    );
+  }
+
+  async findAssignedToDriver(driverId: string, page = 1, size = 10) {
+    const skip = (page - 1) * size;
+
+    const [orders, total] = await Promise.all([
+      OrderModel.find({ driverId: new mongoose.Types.ObjectId(driverId) })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(size),
+      OrderModel.countDocuments({
+        driverId: new mongoose.Types.ObjectId(driverId),
+      }),
+    ]);
+
+    return {
+      orders,
+      total,
+    };
   }
 }

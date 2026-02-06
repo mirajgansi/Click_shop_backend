@@ -19,7 +19,7 @@ export class AuthController {
       const userData: CreateUserDTO = parsedData.data;
       const newUser = await userService.createUser(userData);
       console.log(
-        `👤 New user registered: ${newUser.email} (role: ${newUser.role})`,
+        ` New user registered: ${newUser.email} (role: ${newUser.role})`,
       );
 
       return res

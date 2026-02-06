@@ -54,6 +54,12 @@ const OrderSchema = new Schema(
       default: "unpaid",
     },
 
+    driverId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
     shippingAddress: { type: ShippingAddressSchema },
     notes: { type: String },
   },
@@ -63,6 +69,6 @@ const OrderSchema = new Schema(
 // Helpful indexes
 OrderSchema.index({ userId: 1, createdAt: -1 });
 OrderSchema.index({ status: 1, createdAt: -1 });
-
+OrderSchema.index({ driverId: 1, createdAt: -1 });
 export type Order = InferSchemaType<typeof OrderSchema>;
 export const OrderModel = mongoose.model<Order>("Order", OrderSchema);
