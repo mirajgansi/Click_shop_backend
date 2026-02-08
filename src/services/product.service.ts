@@ -2,6 +2,7 @@ import { HttpError } from "../errors/http-error";
 import { ProductRepository } from "../repositories/product.repository";
 // import { UserRepository } from "../repositories/user.repository"; // only if you want to validate admin exists
 import { CreateProductDto, UpdateProductDto } from "../dtos/product.dto";
+import { ProductModel } from "../models/product.model";
 
 const productRepository = new ProductRepository();
 // const userRepository = new UserRepository(); // optional
@@ -55,10 +56,13 @@ export class ProductService {
   }
 
   async getProductsByCategory(category: string) {
-    if (!category?.trim()) throw new HttpError(400, "Category is required");
-    return await productRepository.getProductsByCategory(category.trim());
-  }
+    const clean = category?.trim();
+    if (!clean) {
+      throw new HttpError(400, "Category is required");
+    }
 
+    return productRepository.getProductsByCategory(clean);
+  }
   // recently added
   async getRecentlyAdded(limit = 10) {
     return await productRepository.getRecentlyAdded(limit);

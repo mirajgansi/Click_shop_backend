@@ -102,8 +102,9 @@ export class ProductController {
 
   async getProductsByCategory(req: Request, res: Response) {
     try {
-      const category = req.params.category;
-      const products = await productService.getProductsByCategory(category);
+      const products = await productService.getProductsByCategory(
+        req.params.category,
+      );
 
       return res.status(200).json({
         success: true,

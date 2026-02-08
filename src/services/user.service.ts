@@ -78,28 +78,28 @@ export class UserService {
 
   async updateUser(userId: string, data: UpdateUserDTO) {
     const user = await userRepository.getUserById(userId);
-    if (!user) {
-      throw new HttpError(404, "User not found");
+    if (!user) throw new HttpError(404, "User not found");
+
+    const cleanData = stripNulls(data);
+
+    if (cleanData.email && user.email !== cleanData.email) {
+      const checkEmail = await userRepository.getUserByEmail(cleanData.email);
+      if (checkEmail) throw new HttpError(409, "Email already in use");
     }
-    if (user.email !== data.email) {
-      const checkEmail = await userRepository.getUserByEmail(data.email!);
-      if (checkEmail) {
-        throw new HttpError(409, "Email already in use");
-      }
-    }
-    if (user.username !== data.username) {
+
+    if (cleanData.username && user.username !== cleanData.username) {
       const checkUsername = await userRepository.getUserByUsername(
-        data.username!,
+        cleanData.username,
       );
-      if (checkUsername) {
-        throw new HttpError(403, "Username already in use");
-      }
+      if (checkUsername) throw new HttpError(403, "Username already in use");
     }
-    if (data.password) {
-      const hashedPassword = await bcryptjs.hash(data.password, 10);
-      data.password = hashedPassword;
+
+    if (cleanData.password) {
+      const hashedPassword = await bcryptjs.hash(cleanData.password, 10);
+      cleanData.password = hashedPassword;
     }
-    const updatedUser = await userRepository.updateUser(userId, data);
+
+    const updatedUser = await userRepository.updateUser(userId, cleanData);
     return updatedUser;
   }
 
@@ -151,4 +151,11 @@ export class UserService {
       throw new HttpError(400, "Invalid or expired token");
     }
   }
+}
+function stripNulls<T extends Record<string, any>>(obj: T) {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([_, v]) => v !== null),
+  ) as {
+    [K in keyof T]: Exclude<T[K], null>;
+  };
 }

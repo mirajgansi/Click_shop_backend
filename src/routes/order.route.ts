@@ -22,7 +22,7 @@ router.patch(
   adminMiddleware,
   controller.updateStatus.bind(controller),
 );
-router.patch("/orders/:id/cancel", controller.cancelMyOrder);
+router.put("/orders/:id/cancel", controller.cancelMyOrder);
 
 // admin assign driver
 router.patch(

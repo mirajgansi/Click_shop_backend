@@ -81,9 +81,11 @@ export class ProductRepository implements IProductRepository {
   }
 
   async getProductsByCategory(category: string) {
-    return await ProductModel.find({ category, available: true }).sort({
-      createdAt: -1,
-    });
+    const clean = category.trim();
+
+    return ProductModel.find({
+      category: { $regex: `^${clean}$`, $options: "i" },
+    }).sort({ createdAt: -1 });
   }
 
   async getRecentlyAdded(limit = 10) {
