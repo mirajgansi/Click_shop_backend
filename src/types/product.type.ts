@@ -1,4 +1,11 @@
 import z from "zod";
+const CATEGORIES = [
+  "fruits",
+  "vegetables",
+  "snacks",
+  "dairy",
+  "beverages",
+] as const;
 
 export const ProductSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -19,8 +26,9 @@ export const ProductSchema = z.object({
 
   nutritionalInfo: z.string().min(1, "Nutritional info is required"),
 
-  category: z.string().min(1, "Category is required"),
-
+  category: z.enum(CATEGORIES, {
+    message: "Category is required",
+  }),
   image: z.string().min(1, "Image is required"),
   images: z.array(z.string()).optional(),
 
