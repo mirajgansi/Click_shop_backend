@@ -32,6 +32,7 @@ router.put(
 router.put(
   "/:id",
   authorizedMiddleware,
+  uploads.array("image", 3),
   adminMiddleware,
   productController.updateProduct,
 );

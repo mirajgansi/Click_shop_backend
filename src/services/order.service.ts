@@ -77,15 +77,12 @@ export class OrderService {
             {
               $inc: {
                 inStock: -qty,
-                totalSold: qty,
-                totalRevenue: lineTotal,
               },
             },
             { session },
           );
           await ProductModel.updateOne(
             { _id: p._id, inStock: { $gt: 0 } },
-            { $set: { available: true } },
             { session },
           );
 
@@ -94,17 +91,13 @@ export class OrderService {
           }
         }
 
-        // 3) Re-check availability flag for products that hit 0 stock (optional but useful)
-        // If you want available auto-managed:
         const productIds = orderItems.map((x: any) => x.productId);
         await ProductModel.updateMany(
           { _id: { $in: productIds }, inStock: { $lte: 0 } },
-          { $set: { available: false } },
           { session },
         );
         await ProductModel.updateMany(
           { _id: { $in: productIds }, inStock: { $gt: 0 } },
-          { $set: { available: true } },
           { session },
         );
 
@@ -344,32 +337,58 @@ export class OrderService {
       throw new HttpError(400, "Invalid order id");
     }
 
-    const order = await OrderModel.findById(orderId);
-    if (!order) throw new HttpError(404, "Order not found");
+    const session = await mongoose.startSession();
+    try {
+      const updated = await session.withTransaction(async () => {
+        const order = await OrderModel.findById(orderId).session(session);
+        if (!order) throw new HttpError(404, "Order not found");
 
-    // ✅ only assigned driver can update
-    if (!order.driverId || String(order.driverId) !== String(driverId)) {
-      throw new HttpError(403, "This order is not assigned to you");
+        if (!order.driverId || String(order.driverId) !== String(driverId)) {
+          throw new HttpError(403, "This order is not assigned to you");
+        }
+
+        const allowed: DriverStatus[] = ["shipped", "delivered"];
+        if (!allowed.includes(status)) {
+          throw new HttpError(
+            400,
+            "Driver can only set status to shipped or delivered",
+          );
+        }
+
+        if (order.status === "cancelled" || order.status === "delivered") {
+          throw new HttpError(
+            400,
+            `Cannot update order when status is ${order.status}`,
+          );
+        }
+        if (status === "delivered" && order.status !== "shipped") {
+          throw new HttpError(400, "Order must be shipped before delivered");
+        }
+
+        order.status = status;
+        await order.save({ session });
+
+        if (status === "delivered") {
+          for (const it of order.items as any[]) {
+            await ProductModel.updateOne(
+              { _id: it.productId },
+              {
+                $inc: {
+                  totalSold: it.quantity,
+                  totalRevenue: it.lineTotal,
+                },
+              },
+              { session },
+            );
+          }
+        }
+
+        return order;
+      });
+
+      return updated;
+    } finally {
+      session.endSession();
     }
-
-    // ✅ driver allowed statuses only
-    const allowed: DriverStatus[] = ["shipped", "delivered"];
-    if (!allowed.includes(status)) {
-      throw new HttpError(
-        400,
-        "Driver can only set status to shipped or delivered",
-      );
-    }
-
-    // ✅ prevent update if already finished
-    if (order.status === "cancelled" || order.status === "delivered") {
-      throw new HttpError(
-        400,
-        `Cannot update order when status is ${order.status}`,
-      );
-    }
-
-    const updated = await orderRepository.driverUpdateStatus(orderId, status);
-    return updated;
   }
 }

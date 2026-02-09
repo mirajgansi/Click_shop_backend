@@ -200,15 +200,45 @@ export class ProductController {
     try {
       const productId = req.params.id;
 
-      const parsedData = UpdateProductDto.safeParse(req.body);
+      // 1) clone body (multer gives strings)
+      const body: any = { ...req.body };
+
+      // 2) parse existingImages (JSON string -> array)
+      if (typeof body.existingImages === "string") {
+        try {
+          body.existingImages = JSON.parse(body.existingImages);
+        } catch {
+          return res.status(400).json({
+            success: false,
+            message: "existingImages must be valid JSON",
+          });
+        }
+      }
+
+      // 3) parse with zod
+      const parsedData = UpdateProductDto.safeParse(body);
       if (!parsedData.success) {
         return res
           .status(400)
           .json({ success: false, message: z.prettifyError(parsedData.error) });
       }
 
-      if (req.file) {
-        parsedData.data.image = `/uploads/${req.file.filename}`;
+      // 4) handle multiple uploaded images (req.files)
+      // depends on multer config: upload.array("image", 5)
+      const files = (req as any).files as Express.Multer.File[] | undefined;
+
+      if (files?.length) {
+        const newImages = files.map((f) => `/uploads/${f.filename}`);
+
+        // if your DB uses `images` array:
+        parsedData.data.existingImages = [
+          ...(Array.isArray(parsedData.data.existingImages)
+            ? parsedData.data.existingImages
+            : []),
+          ...newImages,
+        ];
+
+        // optional: also set `image` as first image
       }
 
       const updated = await productService.updateProduct(
