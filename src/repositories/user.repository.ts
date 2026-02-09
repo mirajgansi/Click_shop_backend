@@ -43,28 +43,30 @@ export class UserRepository implements IUserRepository {
     page,
     size,
     search,
+    filter: baseFilter,
   }: {
     page: number;
     size: number;
     search?: string;
+    filter?: Record<string, any>;
   }): Promise<{ users: IUser[]; total: number }> {
-    const filter: any = search
-      ? {
-          $or: [
-            { username: { $regex: search, $options: "i" } },
-            { email: { $regex: search, $options: "i" } },
-            { phoneNumber: { $regex: search, $options: "i" } },
-            { location: { $regex: search, $options: "i" } },
-          ],
-        }
-      : {};
+    const query: any = { ...(baseFilter || {}) };
+
+    if (search) {
+      query.$or = [
+        { username: { $regex: search, $options: "i" } },
+        { email: { $regex: search, $options: "i" } },
+        { phoneNumber: { $regex: search, $options: "i" } },
+        { location: { $regex: search, $options: "i" } },
+      ];
+    }
 
     const [users, total] = await Promise.all([
-      UserModel.find(filter)
+      UserModel.find(query)
         .select("email username role location phoneNumber DOB gender")
         .skip((page - 1) * size)
         .limit(size),
-      UserModel.countDocuments(filter),
+      UserModel.countDocuments(query),
     ]);
 
     return { users, total };

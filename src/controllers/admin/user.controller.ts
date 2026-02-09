@@ -37,13 +37,22 @@ export class AdminUserController {
 
   async getAllUsers(req: Request, res: Response, next: NextFunction) {
     try {
-      const { page, size, search }: QueryParams = req.query;
+      const { page, size, search, role } = req.query as any; // ✅ include role
 
-      const users = await adminUserService.getAllUsers({ page, size, search });
+      const filter: any = {};
+      if (role) filter.role = role; // ✅ driver/admin/user etc.
+
+      const users = await adminUserService.getAllUsers({
+        page,
+        size,
+        search,
+        filter,
+      });
+
       return res
         .status(200)
         .json({ success: true, data: users, message: "All Users Retrieved" });
-    } catch (error: Error | any) {
+    } catch (error: any) {
       return res.status(error.statusCode ?? 500).json({
         success: false,
         message: error.message || "Internal Server Error",
