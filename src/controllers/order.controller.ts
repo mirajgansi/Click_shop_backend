@@ -3,7 +3,7 @@ import { OrderService } from "../services/order.service";
 import { AssignDriverDto, UpdateOrderStatusDto } from "../dtos/order.dto";
 import { HttpError } from "../errors/http-error";
 
-const oderService = new OrderService();
+const orderService = new OrderService();
 
 interface QueryParams {
   page?: string;
@@ -18,7 +18,7 @@ export class OrderController {
       const userId = (req as any).user?.id;
       if (!userId) throw new HttpError(401, "Unauthorized");
 
-      const order = await oderService.createFromCart(userId, req.body);
+      const order = await orderService.createFromCart(userId, req.body);
 
       return res.status(201).json({
         success: true,
@@ -33,13 +33,12 @@ export class OrderController {
     }
   }
 
-  // GET /api/orders/me
   async getMyOrders(req: Request, res: Response) {
     try {
       const userId = (req as any).user?.id;
       if (!userId) throw new HttpError(401, "Unauthorized");
 
-      const orders = await oderService.getMyOrders(userId);
+      const orders = await orderService.getMyOrders(userId);
 
       return res.json({
         success: true,
@@ -59,7 +58,7 @@ export class OrderController {
       const userId = (req as any).user?.id;
       const role = (req as any).user?.role;
 
-      const order = await oderService.getOrderById(req.params.id);
+      const order = await orderService.getOrderById(req.params.id);
 
       // user can only see own order (admin can see all)
       if (role !== "admin" && String(order.userId) !== String(userId)) {
@@ -83,7 +82,7 @@ export class OrderController {
     try {
       const { page, size, search }: QueryParams = req.query;
 
-      const orders = await oderService.getAllOrders({
+      const orders = await orderService.getAllOrders({
         page,
         size,
         search,
@@ -102,7 +101,6 @@ export class OrderController {
     }
   }
 
-  // ADMIN: PATCH /api/orders/:id/status
   async updateStatus(req: Request, res: Response) {
     try {
       const parsed = UpdateOrderStatusDto.safeParse(req.body);
@@ -114,7 +112,7 @@ export class OrderController {
         });
       }
 
-      const updated = await oderService.updateStatus(
+      const updated = await orderService.updateStatus(
         req.params.id,
         parsed.data,
       );
@@ -135,7 +133,7 @@ export class OrderController {
   async cancelMyOrder(req: Request, res: Response) {
     try {
       const userId = req.user!._id;
-      const updated = await oderService.cancelMyOrder(req.params.id, userId);
+      const updated = await orderService.cancelMyOrder(req.params.id, userId);
 
       return res.json({
         success: true,
@@ -164,7 +162,7 @@ export class OrderController {
       const adminId = req.user?._id;
       if (!adminId) throw new HttpError(401, "Unauthorized");
 
-      const updated = await oderService.assignDriver(
+      const updated = await orderService.assignDriver(
         req.params.id,
         parsed.data.driverId,
         adminId,
@@ -191,12 +189,37 @@ export class OrderController {
       const page = Number(req.query.page ?? "1");
       const size = Number(req.query.size ?? "10");
 
-      const data = await oderService.getMyAssignedOrders(driverId, page, size);
+      const data = await orderService.getMyAssignedOrders(driverId, page, size);
 
       return res.json({
         success: true,
         message: "Assigned orders fetched",
         ...data,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode ?? 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
+    }
+  }
+
+  async driverUpdateStatus(req: any, res: Response) {
+    try {
+      const driverId = req.user.id; // from authorizedMiddleware
+      const { id } = req.params; // orderId
+      const { status } = req.body; // "shipped" | "delivered"
+
+      const updated = await orderService.driverUpdateStatus(
+        driverId,
+        id,
+        status,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Order status updated",
+        data: updated,
       });
     } catch (error: any) {
       return res.status(error.statusCode ?? 500).json({

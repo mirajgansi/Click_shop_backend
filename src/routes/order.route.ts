@@ -23,20 +23,22 @@ router.patch(
   controller.updateStatus.bind(controller),
 );
 router.put("/:id/cancel", controller.cancelMyOrder);
-
+// // driver get assigned orders
+router.get(
+  "/driver/my-orders",
+  driverMiddleware, // or role check
+  controller.getMyAssignedOrders.bind(controller),
+);
+router.patch(
+  "/driver/:id/status",
+  driverMiddleware,
+  controller.driverUpdateStatus.bind(controller),
+);
 // admin assign driver
 router.patch(
   "/:id/assign-driver",
   adminMiddleware,
   controller.assignDriver.bind(controller),
-);
-
-// // driver get assigned orders
-router.get(
-  "/driver/my-orders",
-  authorizedMiddleware,
-  driverMiddleware, // or role check
-  controller.getMyAssignedOrders.bind(controller),
 );
 
 export default router;

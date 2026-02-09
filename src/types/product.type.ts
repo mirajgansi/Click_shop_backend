@@ -1,9 +1,10 @@
 import z from "zod";
-const CATEGORIES = [
-  "fruits",
-  "vegetables",
+export const CATEGORIES = [
+  "meat",
+  "oil",
+  "pulses",
+  "bakery",
   "snacks",
-  "dairy",
   "beverages",
 ] as const;
 

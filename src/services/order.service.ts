@@ -13,6 +13,8 @@ type CreateOrderInput = {
   shippingAddress?: any;
   notes?: string;
 };
+type DriverStatus = "shipped" | "delivered";
+
 type AuthUser = {
   _id: string;
   role: "admin" | "user" | "driver";
@@ -281,6 +283,7 @@ export class OrderService {
 
     return order;
   }
+
   async assignDriver(orderId: string, driverId: string, userId: string) {
     if (!userId) throw new HttpError(401, "Unauthorized");
 
@@ -329,5 +332,44 @@ export class OrderService {
         totalPages: Math.ceil(total / size),
       },
     };
+  }
+  async driverUpdateStatus(
+    driverId: string,
+    orderId: string,
+    status: DriverStatus,
+  ) {
+    if (!driverId) throw new HttpError(401, "Unauthorized");
+
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      throw new HttpError(400, "Invalid order id");
+    }
+
+    const order = await OrderModel.findById(orderId);
+    if (!order) throw new HttpError(404, "Order not found");
+
+    // ✅ only assigned driver can update
+    if (!order.driverId || String(order.driverId) !== String(driverId)) {
+      throw new HttpError(403, "This order is not assigned to you");
+    }
+
+    // ✅ driver allowed statuses only
+    const allowed: DriverStatus[] = ["shipped", "delivered"];
+    if (!allowed.includes(status)) {
+      throw new HttpError(
+        400,
+        "Driver can only set status to shipped or delivered",
+      );
+    }
+
+    // ✅ prevent update if already finished
+    if (order.status === "cancelled" || order.status === "delivered") {
+      throw new HttpError(
+        400,
+        `Cannot update order when status is ${order.status}`,
+      );
+    }
+
+    const updated = await orderRepository.driverUpdateStatus(orderId, status);
+    return updated;
   }
 }

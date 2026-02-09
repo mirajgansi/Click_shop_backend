@@ -36,7 +36,7 @@ export class ProductController {
           .json({ success: false, message: "Image is required" });
       }
 
-      parsedData.data.image = `/uploads/${files[0].filename}`; // ✅ required field
+      parsedData.data.image = `/uploads/${files[0].filename}`;
       parsedData.data.images = files.map((f) => `/uploads/${f.filename}`);
 
       // optional gallery:

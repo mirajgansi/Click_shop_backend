@@ -79,11 +79,17 @@ export class OrderRepository {
   }
 
   async assignDriver(orderId: string, driverId: string) {
-    return OrderModel.findByIdAndUpdate(
+    const updated = await OrderModel.findByIdAndUpdate(
       orderId,
-      { driverId: new mongoose.Types.ObjectId(driverId) },
+      {
+        driverId,
+        assignedAt: new Date(),
+        status: "shipped",
+      },
       { new: true },
     );
+
+    return updated;
   }
 
   async findAssignedToDriver(driverId: string, page = 1, size = 10) {
@@ -103,5 +109,18 @@ export class OrderRepository {
       orders,
       total,
     };
+  }
+
+  async driverUpdateStatus(orderId: string, status: "shipped" | "delivered") {
+    const update: any = { status };
+
+    if (status === "delivered") {
+      update.deliveredAt = new Date();
+    }
+
+    const updated = await OrderModel.findByIdAndUpdate(orderId, update, {
+      new: true,
+    });
+    return updated;
   }
 }

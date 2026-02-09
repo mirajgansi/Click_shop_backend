@@ -11,8 +11,8 @@ export const CreateProductDto = ProductSchema.pick({
   category: true,
   inStock: true,
   sku: true,
-  image: true,
 }).extend({
+  image: z.string().optional(),
   images: z.array(z.string()).optional(),
   price: z.coerce.number().positive(),
   inStock: z.coerce.number().int().min(0).default(0),
