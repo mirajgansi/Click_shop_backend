@@ -1,21 +1,77 @@
 import mongoose from "mongoose";
 import { DriverRepository } from "../repositories/driver.repository";
+import { HttpError } from "../errors/http-error";
+import { OrderModel } from "../models/order.model";
+import { ProductModel } from "../models/product.model";
+type DriverStatus = "shipped" | "delivered";
 
 export class DriverService {
   constructor(private repo = new DriverRepository()) {}
 
-  async driverUpdateStatus(driverId: string, status: "active" | "inactive") {
-    if (!mongoose.Types.ObjectId.isValid(driverId)) {
-      return { success: false, message: "Invalid driver id" };
+  async driverUpdateStatus(
+    driverId: string,
+    orderId: string,
+    status: DriverStatus,
+  ) {
+    if (!driverId) throw new HttpError(401, "Unauthorized");
+
+    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+      throw new HttpError(400, "Invalid order id");
     }
 
-    const driver = await this.repo.findDriverById(driverId);
-    if (!driver) return { success: false, message: "Driver not found" };
-    if (driver.role !== "driver")
-      return { success: false, message: "User is not a driver" };
+    const session = await mongoose.startSession();
+    try {
+      const updated = await session.withTransaction(async () => {
+        const order = await OrderModel.findById(orderId).session(session);
+        if (!order) throw new HttpError(404, "Order not found");
 
-    const updated = await this.repo.updateDriverStatus(driverId, status);
-    return { success: true, message: "Driver status updated", data: updated };
+        if (!order.driverId || String(order.driverId) !== String(driverId)) {
+          throw new HttpError(403, "This order is not assigned to you");
+        }
+
+        const allowed: DriverStatus[] = ["shipped", "delivered"];
+        if (!allowed.includes(status)) {
+          throw new HttpError(
+            400,
+            "Driver can only set status to shipped or delivered",
+          );
+        }
+
+        if (order.status === "cancelled" || order.status === "delivered") {
+          throw new HttpError(
+            400,
+            `Cannot update order when status is ${order.status}`,
+          );
+        }
+        if (status === "delivered" && order.status !== "shipped") {
+          throw new HttpError(400, "Order must be shipped before delivered");
+        }
+
+        order.status = status;
+        await order.save({ session });
+
+        if (status === "delivered") {
+          for (const it of order.items as any[]) {
+            await ProductModel.updateOne(
+              { _id: it.productId },
+              {
+                $inc: {
+                  totalSold: it.quantity,
+                  totalRevenue: it.lineTotal,
+                },
+              },
+              { session },
+            );
+          }
+        }
+
+        return order;
+      });
+
+      return updated;
+    } finally {
+      session.endSession();
+    }
   }
 
   //   async assignDriver(orderId: string, driverId: string) {
@@ -85,5 +141,29 @@ export class DriverService {
 
     const stats = await this.repo.getDriverStatsById(driverId);
     return { success: true, data: stats };
+  }
+
+  async getDriverDetailById(driverId: string, page = 1, size = 10) {
+    if (!mongoose.Types.ObjectId.isValid(driverId)) {
+      return { success: false, message: "Invalid driver id" };
+    }
+
+    const driver = await this.repo.findDriverById(driverId);
+    if (!driver) return { success: false, message: "Driver not found" };
+
+    const stats = await this.repo.getDriverStatsById(driverId);
+
+    const { orders, pagination } =
+      await this.repo.findOrdersByDriverIdPaginated(driverId, page, size);
+
+    return {
+      success: true,
+      data: {
+        driver,
+        stats,
+        orders,
+        pagination,
+      },
+    };
   }
 }

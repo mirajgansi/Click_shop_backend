@@ -17,6 +17,9 @@ const UserSchema: Schema = new Schema<UserType>(
       enum: ["user", "admin", "driver"],
       default: "user",
     },
+
+    passwordResetCode: { type: String, default: null },
+    passwordResetExpires: { type: Date, default: null },
   },
   {
     timestamps: true, // auto createdAt and updatedAt

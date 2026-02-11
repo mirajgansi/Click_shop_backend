@@ -41,30 +41,41 @@ export class OrderRepository {
     page = 1,
     size = 10,
     search,
+    tab = "all",
   }: {
     page: number;
     size: number;
     search?: string;
+    tab?: string;
   }) {
-    const safePage = Math.max(1, page);
-    const safeSize = Math.min(100, Math.max(1, size));
-    const skip = (safePage - 1) * safeSize;
+    const skip = (page - 1) * size;
 
     const filter: any = {};
+
+    // search
     if (search?.trim()) {
       const q = search.trim();
       filter.$or = [
         { "shippingAddress.userName": { $regex: q, $options: "i" } },
-        { "shippingAddress.address1": { $regex: q, $options: "i" } },
+        { "shippingAddress.phone": { $regex: q, $options: "i" } },
         { "items.name": { $regex: q, $options: "i" } },
+        { _id: { $regex: q, $options: "i" } }, // optional
       ];
     }
 
+    // tab filters
+    if (tab === "pending" || tab === "unfulfilled") {
+      filter.status = { $in: ["pending", "paid"] }; // not shipped/delivered
+    } else if (tab === "unpaid") {
+      filter.paymentStatus = "unpaid";
+    } else if (tab === "open") {
+      filter.status = { $in: ["pending", "paid", "shipped"] };
+    } else if (tab === "closed") {
+      filter.status = { $in: ["delivered", "cancelled"] };
+    }
+
     const [orders, total] = await Promise.all([
-      OrderModel.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(safeSize),
+      OrderModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(size),
       OrderModel.countDocuments(filter),
     ]);
 
@@ -115,6 +126,7 @@ export class OrderRepository {
     const update: any = { status };
 
     if (status === "delivered") {
+      update.paymentStatus = "paid";
       update.deliveredAt = new Date();
     }
 

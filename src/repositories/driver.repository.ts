@@ -3,14 +3,12 @@ import { OrderModel } from "../models/order.model";
 import { UserModel } from "../models/user.model";
 
 export class DriverRepository {
-  async findDriverById(driverId: string) {
-    return UserModel.findById(driverId);
-  }
-
   async updateDriverStatus(driverId: string, status: "active" | "inactive") {
     return UserModel.findByIdAndUpdate(driverId, { status }, { new: true });
   }
-
+  async findDriverById(driverId: string) {
+    return UserModel.findById(driverId);
+  }
   async findOrderById(orderId: string) {
     return OrderModel.findById(orderId);
   }
@@ -115,6 +113,32 @@ export class DriverRepository {
     return {
       totalAssigned: row?.totalAssigned ?? 0,
       deliveredCount: row?.deliveredCount ?? 0,
+    };
+  }
+
+  async findOrdersByDriverIdPaginated(driverId: string, page = 1, size = 10) {
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeSize = Math.min(100, Math.max(1, Number(size) || 10));
+    const skip = (safePage - 1) * safeSize;
+
+    const filter = { driverId: new mongoose.Types.ObjectId(driverId) };
+
+    const [orders, total] = await Promise.all([
+      OrderModel.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(safeSize),
+      OrderModel.countDocuments(filter),
+    ]);
+
+    return {
+      orders,
+      pagination: {
+        page: safePage,
+        size: safeSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / safeSize)),
+      },
     };
   }
 }

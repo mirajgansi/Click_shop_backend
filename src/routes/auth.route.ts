@@ -20,6 +20,6 @@ router.delete("/me", authorizedMiddleware, authController.deleteMe);
 
 router.post("/request-password-reset", authController.requestPasswordChange);
 
-router.post("/reset-password/:token", authController.resetPassword);
+router.post("/reset-password", authController.resetPassword);
 
 export default router;

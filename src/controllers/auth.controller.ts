@@ -109,11 +109,18 @@ export class AuthController {
   async requestPasswordChange(req: Request, res: Response) {
     try {
       const { email } = req.body;
-      const user = await userService.sendResetPasswordEmail(email);
+
+      if (!email) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Email is required" });
+      }
+
+      await userService.sendResetPasswordEmail(email);
+
       return res.status(200).json({
         success: true,
-        data: user,
-        message: "Password reset email sent",
+        message: "Password reset code sent to email",
       });
     } catch (error: Error | any) {
       return res.status(error.statusCode || 500).json({
@@ -155,12 +162,31 @@ export class AuthController {
   //reset password
   async resetPassword(req: Request, res: Response) {
     try {
-      const token = req.params.token;
-      const { newPassword } = req.body;
-      await userService.resetPassword(token, newPassword);
+      const { email, code, newPassword } = req.body;
+
+      if (!email || !code) {
+        return res.status(400).json({
+          success: false,
+          message: "Email and reset code are required",
+        });
+      }
+
+      // reuse UpdateUserDTO just to validate password
+      const parsed = UpdateUserDTO.pick({
+        password: true,
+      }).safeParse({ password: newPassword });
+
+      if (!parsed.success) {
+        return res
+          .status(400)
+          .json({ success: false, message: z.prettifyError(parsed.error) });
+      }
+
+      await userService.resetPassword(email, code, newPassword);
+
       return res.status(200).json({
         success: true,
-        message: "Password has been reset successfully.",
+        message: "Password has been reset successfully",
       });
     } catch (error: Error | any) {
       return res.status(error.statusCode ?? 500).json({

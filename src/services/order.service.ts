@@ -159,10 +159,12 @@ export class OrderService {
     page,
     size,
     search,
+    tab,
   }: {
     page?: string;
     size?: string;
     search?: string;
+    tab?: string;
   }) {
     const currentPage = page ? parseInt(page) : 1;
     const pageSize = size === "all" ? 1000000 : size ? parseInt(size) : 10;
@@ -173,6 +175,7 @@ export class OrderService {
       page: currentPage,
       size: pageSize,
       search: currentSearch,
+      tab: tab || "all",
     });
 
     return {
@@ -338,6 +341,7 @@ export class OrderService {
     }
 
     const session = await mongoose.startSession();
+
     try {
       const updated = await session.withTransaction(async () => {
         const order = await OrderModel.findById(orderId).session(session);
@@ -361,14 +365,18 @@ export class OrderService {
             `Cannot update order when status is ${order.status}`,
           );
         }
+
         if (status === "delivered" && order.status !== "shipped") {
           throw new HttpError(400, "Order must be shipped before delivered");
         }
 
+        // ✅ STATUS UPDATE
         order.status = status;
-        await order.save({ session });
 
         if (status === "delivered") {
+          order.paymentStatus = "paid"; 
+
+          // update product stats
           for (const it of order.items as any[]) {
             await ProductModel.updateOne(
               { _id: it.productId },
@@ -382,6 +390,8 @@ export class OrderService {
             );
           }
         }
+
+        await order.save({ session });
 
         return order;
       });

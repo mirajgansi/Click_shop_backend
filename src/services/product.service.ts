@@ -31,20 +31,30 @@ export class ProductService {
     page,
     size,
     search,
+    category,
   }: {
     page?: string;
     size?: string;
     search?: string;
+    category?: string;
   }) {
     const currentPage = page ? parseInt(page) : 1;
     const pageSize =
       size === "all" ? Number.MAX_SAFE_INTEGER : size ? parseInt(size) : 10;
-    const currentSearch = search || "";
+
+    const currentSearch = (search ?? "").trim();
+
+    const currentCategory = (category ?? "").trim();
+    const normalizedCategory =
+      !currentCategory || currentCategory === "All" ? "" : currentCategory;
+
     const { products, total } = await productRepository.getAllProducts({
       page: currentPage,
       size: pageSize,
       search: currentSearch,
+      category: normalizedCategory,
     });
+
     const pagination = {
       page: currentPage,
       size: pageSize,

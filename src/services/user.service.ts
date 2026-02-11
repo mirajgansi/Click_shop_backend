@@ -104,19 +104,34 @@ export class UserService {
   }
 
   async sendResetPasswordEmail(email?: string) {
-    const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
     if (!email) {
       throw new HttpError(400, "Email is required");
     }
+
     const user = await userRepository.getUserByEmail(email);
     if (!user) {
       throw new HttpError(404, "User not found");
     }
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" }); // 1 hour expiry
-    const resetLink = `${CLIENT_URL}/reset-password?token=${token}`;
-    const html = `<p>Click <a href="${resetLink}">here</a> to reset your password. This link will expire in 1 hour.</p>`;
-    await sendEmail(user.email, "Password Reset", html);
-    return user;
+
+    // 6-digit reset code
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Hash code using bcrypt
+    const hashedCode = await bcrypt.hash(resetCode, 10);
+
+    user.passwordResetCode = hashedCode;
+    user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    await user.save();
+
+    const html = `
+    <p>Your password reset code is:</p>
+    <h2 style="letter-spacing:2px">${resetCode}</h2>
+    <p>This code will expire in 10 minutes.</p>
+  `;
+
+    await sendEmail(user.email, "Password Reset Code", html);
+
+    return { message: "Reset code sent to email" };
   }
 
   async deleteMe(userId: string, password: string) {
@@ -133,23 +148,34 @@ export class UserService {
     return true;
   }
   //reset password token
-  async resetPassword(token?: string, newPassword?: string) {
-    try {
-      if (!token || !newPassword) {
-        throw new HttpError(400, "Token and new password are required");
-      }
-      const decoded: any = jwt.verify(token, JWT_SECRET);
-      const userId = decoded.id;
-      const user = await userRepository.getUserById(userId);
-      if (!user) {
-        throw new HttpError(404, "User not found");
-      }
-      const hashedPassword = await bcryptjs.hash(newPassword, 10);
-      await userRepository.updateUser(userId, { password: hashedPassword });
-      return user;
-    } catch (error) {
-      throw new HttpError(400, "Invalid or expired token");
+
+  async resetPassword(email: string, code: string, newPassword: string) {
+    const user = await userRepository.getUserByEmail(email);
+    if (!user) throw new HttpError(404, "User not found");
+
+    if (!user.passwordResetCode || !user.passwordResetExpires) {
+      throw new HttpError(400, "No reset request found");
     }
+
+    if (user.passwordResetExpires < new Date()) {
+      throw new HttpError(400, "Reset code expired");
+    }
+
+    const isValid = await bcrypt.compare(code, user.passwordResetCode);
+    if (!isValid) {
+      throw new HttpError(400, "Invalid reset code");
+    }
+
+    // Hash new password (same as signup/login)
+    user.password = await bcrypt.hash(newPassword, 12);
+
+    // Clear reset fields
+    user.passwordResetCode = undefined;
+    user.passwordResetExpires = undefined;
+
+    await user.save();
+
+    return { message: "Password reset successful" };
   }
 }
 function stripNulls<T extends Record<string, any>>(obj: T) {

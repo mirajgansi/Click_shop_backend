@@ -21,6 +21,15 @@ router.patch(
   driverMiddleware,
   controller.driverUpdateOrderStatus.bind(controller),
 );
+
+router.get(
+  "/stats/:id",
+  // authMiddleware,
+  // adminMiddleware,
+  controller.getDriverStatsById.bind(controller),
+);
+router.get("/:id/detail", controller.getDriverDetailById.bind(controller));
+
 router.get(
   "/stats",
   // adminMiddleware, // enable if needed

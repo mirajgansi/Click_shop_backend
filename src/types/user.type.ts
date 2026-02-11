@@ -12,6 +12,9 @@ export const UserSchema = z.object({
   DOB: z.string().optional(),
   role: z.enum(["user", "admin", "driver"]).default("user"),
   image: z.string().optional(),
+
+  passwordResetCode: z.string().nullable().optional(),
+  passwordResetExpires: z.date().nullable().optional(),
 });
 
 export type UserType = z.infer<typeof UserSchema>;

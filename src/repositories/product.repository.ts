@@ -7,6 +7,7 @@ export interface IProductRepository {
     page: number;
     size: number;
     search?: string;
+    category?: String;
   }): Promise<{ products: ProductDoc[]; total: number }>;
 
   createProduct(productData: Partial<ProductType>): Promise<ProductDoc>;
@@ -53,27 +54,31 @@ export class ProductRepository implements IProductRepository {
     page,
     size,
     search,
+    category,
   }: {
     page: number;
     size: number;
     search?: string;
+    category?: string;
   }) {
-    const filter: any = search
-      ? {
-          $or: [
-            { name: { $regex: search, $options: "i" } },
-            { category: { $regex: search, $options: "i" } },
-            { manufacturer: { $regex: search, $options: "i" } },
-            { sku: { $regex: search, $options: "i" } },
-          ],
-        }
-      : {};
+    const skip = (page - 1) * size;
+
+    const filter: any = {};
+
+    if (search?.trim()) {
+      const q = search.trim();
+      filter.$or = [
+        { name: { $regex: q, $options: "i" } },
+        { category: { $regex: q, $options: "i" } },
+      ];
+    }
+
+    if (category?.trim()) {
+      filter.category = category.trim();
+    }
 
     const [products, total] = await Promise.all([
-      ProductModel.find(filter)
-        .skip((page - 1) * size)
-        .limit(size)
-        .sort({ createdAt: -1 }),
+      ProductModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(size),
       ProductModel.countDocuments(filter),
     ]);
 
