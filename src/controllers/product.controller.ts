@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import z from "zod";
 import { ProductService } from "../services/product.service";
 import { CreateProductDto, UpdateProductDto } from "../dtos/product.dto";
+import mongoose from "mongoose";
 
 const productService = new ProductService();
 interface QueryParams {
@@ -61,9 +62,18 @@ export class ProductController {
   }
 
   // ---------------- READ ----------------
+
   async getProductById(req: Request, res: Response) {
     try {
       const productId = req.params.id;
+
+      if (!mongoose.Types.ObjectId.isValid(productId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid product id",
+        });
+      }
+
       const product = await productService.getProductById(productId);
 
       return res.status(200).json({
@@ -142,7 +152,7 @@ export class ProductController {
   async getTrending(req: Request, res: Response) {
     try {
       const limit = Number(req.query.limit ?? 10);
-      const products = await productService.getTrendingProducts(limit);
+      const products = await productService.getTrending(limit);
 
       return res.status(200).json({
         success: true,
@@ -161,7 +171,7 @@ export class ProductController {
   async getMostPopular(req: Request, res: Response) {
     try {
       const limit = Number(req.query.limit ?? 10);
-      const products = await productService.getMostPopularProducts(limit);
+      const products = await productService.getMostPopular(limit);
 
       return res.status(200).json({
         success: true,
@@ -180,7 +190,7 @@ export class ProductController {
   async getTopRated(req: Request, res: Response) {
     try {
       const limit = Number(req.query.limit ?? 10);
-      const products = await productService.getTopRatedProducts(limit);
+      const products = await productService.getTopRated(limit);
 
       return res.status(200).json({
         success: true,

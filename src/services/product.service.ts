@@ -75,22 +75,28 @@ export class ProductService {
   }
   // recently added
   async getRecentlyAdded(limit = 10) {
-    return await productRepository.getRecentlyAdded(limit);
+    return await ProductModel.find({ inStock: { $gt: 0 } })
+      .sort({ createdAt: -1 })
+      .limit(limit);
   }
 
   // trending = highest selling
-  async getTrendingProducts(limit = 10) {
-    return await productRepository.getTrending(limit);
+  async getTrending(limit = 10) {
+    return await ProductModel.find({ inStock: { $gt: 0 } })
+      .sort({ totalSold: -1 })
+      .limit(limit);
   }
-
   // popular = most viewed
-  async getMostPopularProducts(limit = 10) {
-    return await productRepository.getMostPopular(limit);
+  async getMostPopular(limit = 10) {
+    return await ProductModel.find({ inStock: { $gt: 0 } })
+      .sort({ viewCount: -1 })
+      .limit(limit);
   }
-
   // top rated
-  async getTopRatedProducts(limit = 10) {
-    return await productRepository.getTopRated(limit);
+  async getTopRated(limit = 10) {
+    return await ProductModel.find({ inStock: { $gt: 0 } })
+      .sort({ averageRating: -1, reviewCount: -1 })
+      .limit(limit);
   }
 
   // ---------------- UPDATE (ADMIN) ----------------

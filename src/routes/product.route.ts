@@ -36,11 +36,13 @@ router.put(
   adminMiddleware,
   productController.updateProduct,
 );
-router.get("/:id", productController.getProductById);
 router.get("/", productController.getAllProducts);
 router.get("/category/:category", productController.getProductsByCategory);
 router.get("/recent", productController.getRecentlyAdded);
 router.get("/trending", productController.getTrending);
 router.get("/popular", productController.getMostPopular);
 router.get("/top-rated", productController.getTopRated);
+
+router.get("/:id", productController.getProductById);
+
 export default router;

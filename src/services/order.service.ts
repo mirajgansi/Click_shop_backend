@@ -81,10 +81,6 @@ export class OrderService {
             },
             { session },
           );
-          await ProductModel.updateOne(
-            { _id: p._id, inStock: { $gt: 0 } },
-            { session },
-          );
 
           if (updateRes.modifiedCount !== 1) {
             throw new HttpError(400, `Stock update failed for ${p.name}`);
@@ -92,14 +88,6 @@ export class OrderService {
         }
 
         const productIds = orderItems.map((x: any) => x.productId);
-        await ProductModel.updateMany(
-          { _id: { $in: productIds }, inStock: { $lte: 0 } },
-          { session },
-        );
-        await ProductModel.updateMany(
-          { _id: { $in: productIds }, inStock: { $gt: 0 } },
-          { session },
-        );
 
         // 4) Totals
         const subtotal = orderItems.reduce(
@@ -374,7 +362,7 @@ export class OrderService {
         order.status = status;
 
         if (status === "delivered") {
-          order.paymentStatus = "paid"; 
+          order.paymentStatus = "paid";
 
           // update product stats
           for (const it of order.items as any[]) {

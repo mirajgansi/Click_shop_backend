@@ -65,7 +65,7 @@ export class OrderRepository {
 
     // tab filters
     if (tab === "pending" || tab === "unfulfilled") {
-      filter.status = { $in: ["pending", "paid"] }; // not shipped/delivered
+      filter.status = { $in: ["pending", "paid"] };
     } else if (tab === "unpaid") {
       filter.paymentStatus = "unpaid";
     } else if (tab === "open") {

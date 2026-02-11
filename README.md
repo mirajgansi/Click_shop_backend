@@ -1,9 +1,11 @@
 # Create a backend for your project
+
 ```
 npm init
 ```
 
 create .gitignore
+
 ```.git
 # Logs
 logs
@@ -90,7 +92,6 @@ dist
 !.yarn/versions
 ```
 
-
 ```bash
 npm i bcryptjs dotenv express mongoose zod jsonwebtoken
 ```
@@ -104,6 +105,7 @@ npx tsc --init
 ```
 
 tsconfig.json
+
 ```json
 {
   "compilerOptions": {
@@ -127,6 +129,7 @@ tsconfig.json
 ```
 
 .env
+
 ```.env
 JWT_SECRET='mero_sercret'
 MONGODB_URI='mongodb://127.0.0.1:27017/my_db'
@@ -137,10 +140,11 @@ PORT=5050
 
 ### Register A User
 
-* Send Body in JSON
-* Make Sure the body matches the DTO
+- Send Body in JSON
+- Make Sure the body matches the DTO
 
 Request - /api/auth/register
+
 ```json
 {
   "email": "test@test.com",
@@ -152,16 +156,16 @@ Request - /api/auth/register
 }
 ```
 
-
 ### Login A User
-* Send Body in JSON
-* Make Sure the body matches the DTO
+
+- Send Body in JSON
+- Make Sure the body matches the DTO
 
 Request - /api/auth/login
+
 ```json
 {
   "email": "test@test.com",
   "password": "passpass"
 }
 ```
-
