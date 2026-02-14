@@ -2,7 +2,7 @@ import z from "zod";
 export const CATEGORIES = [
   "meat",
   "oil",
-  "pulses",
+  "pluse",
   "bakery",
   "snacks",
   "beverages",

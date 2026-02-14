@@ -8,6 +8,8 @@ import cartRoutes from "./routes/cart.route";
 import adminUserRoutes from "./routes/admin/user.route";
 import orderRoutes from "./routes/order.route";
 import diverRoutes from "./routes/driver.route";
+import adminAnalyticsRoute from "./routes/admin/admin.analytics.route";
+
 import cors from "cors";
 import path from "path";
 
@@ -37,6 +39,7 @@ app.use("/api/driver", diverRoutes);
 
 app.use("/api/orders", orderRoutes);
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use("/api/admin/analytics", adminAnalyticsRoute);
 
 app.use((err: any, req: Request, res: Response, _next: any) => {
   console.error("ERROR:", err);
