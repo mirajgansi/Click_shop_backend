@@ -31,4 +31,9 @@ router.get(
   adminAnalyticsController.driversAnalytics.bind(adminAnalyticsController),
 );
 
+router.get(
+  "/topView",
+  adminAnalyticsController.topViewedProducts.bind(adminAnalyticsController),
+);
+
 export default router;

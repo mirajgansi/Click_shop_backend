@@ -220,4 +220,38 @@ export class AdminAnalyticsService {
 
     return this.repo.aggregate<any>(pipeline);
   }
+
+  async getTopViewedProducts(limit = 10) {
+    const pipeline: PipelineStage[] = [
+      {
+        $match: {
+          viewCount: { $gt: 0 },
+        },
+      },
+      { $sort: { viewCount: -1 } },
+      { $limit: limit },
+      {
+        $project: {
+          _id: 0,
+          productId: "$_id",
+          name: "$name",
+          viewCount: { $ifNull: ["$viewCount", 0] },
+        },
+      },
+    ];
+
+    const rows = await this.repo.aggregateFromCollection<any>(
+      "products",
+      pipeline,
+    );
+
+    const total =
+      rows.reduce((s: number, r: any) => s + (r.viewCount || 0), 0) || 1;
+
+    return rows.map((r: any) => ({
+      name: r.name,
+      viewCount: r.viewCount,
+      share: Number(((r.viewCount / total) * 100).toFixed(1)),
+    }));
+  }
 }

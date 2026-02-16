@@ -38,41 +38,51 @@ export class OrderRepository {
   }
 
   async findAll({
-    page = 1,
-    size = 10,
+    page,
+    size,
     search,
-    tab = "all",
+    tab,
   }: {
     page: number;
     size: number;
     search?: string;
     tab?: string;
   }) {
-    const skip = (page - 1) * size;
-
     const filter: any = {};
+    const t = (tab ?? "all").toLowerCase().trim();
+    const q = (search ?? "").trim();
 
-    // search
-    if (search?.trim()) {
-      const q = search.trim();
+    // search (adjust fields to match your schema)
+    if (q) {
       filter.$or = [
         { "shippingAddress.userName": { $regex: q, $options: "i" } },
         { "shippingAddress.phone": { $regex: q, $options: "i" } },
-        { "items.name": { $regex: q, $options: "i" } },
-        { _id: { $regex: q, $options: "i" } }, // optional
+        { "shippingAddress.city": { $regex: q, $options: "i" } },
       ];
     }
 
-    // tab filters
-    if (tab === "pending" || tab === "unfulfilled") {
-      filter.status = { $in: ["pending", "paid"] };
-    } else if (tab === "unpaid") {
-      filter.paymentStatus = "unpaid";
-    } else if (tab === "open") {
-      filter.status = { $in: ["pending", "paid", "shipped"] };
-    } else if (tab === "closed") {
-      filter.status = { $in: ["delivered", "cancelled"] };
+    // tabs → real filters
+    switch (t) {
+      case "unpaid":
+        filter.paymentStatus = "unpaid";
+        break;
+
+      case "pending":
+      case "open":
+        filter.status = { $nin: ["delivered", "cancelled"] };
+        break;
+
+      case "closed":
+        filter.status = { $in: ["delivered", "cancelled"] };
+        break;
+
+      case "all":
+      default:
+        // no extra filter
+        break;
     }
+
+    const skip = (page - 1) * size;
 
     const [orders, total] = await Promise.all([
       OrderModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(size),

@@ -10,6 +10,7 @@ export const CreateProductDto = ProductSchema.pick({
   nutritionalInfo: true,
   category: true,
   inStock: true,
+  viewCount: true,
 }).extend({
   existingImages: z.union([z.string(), z.array(z.string())]).optional(),
   image: z.string().optional(),
@@ -29,6 +30,7 @@ export const UpdateProductDto = ProductSchema.pick({
   nutritionalInfo: true,
   category: true,
   inStock: true,
+  viewCount: true,
 })
   .partial()
   .extend({

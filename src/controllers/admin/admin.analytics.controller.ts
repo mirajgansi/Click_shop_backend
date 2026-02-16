@@ -47,4 +47,21 @@ export class AdminAnalyticsController {
     const data = await this.service.getDriversAnalytics(range, limit);
     return res.json({ success: true, data });
   }
+
+  async topViewedProducts(req: Request, res: Response) {
+    try {
+      const limit = Number(req.query.limit || 10);
+      const data = await this.service.getTopViewedProducts(limit);
+
+      return res.json({
+        success: true,
+        data,
+      });
+    } catch (error: any) {
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Failed to fetch top viewed products",
+      });
+    }
+  }
 }
