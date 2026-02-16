@@ -5,44 +5,75 @@ import {
 } from "../middleware/authorized.middleware";
 import { uploads } from "../middleware/upload.middleware";
 import { ProductController } from "../controllers/product.controller";
-let productController = new ProductController();
+
 const router = Router();
+const productController = new ProductController();
 
 router.post(
   "/",
   authorizedMiddleware,
   adminMiddleware,
   uploads.array("image", 3),
-  productController.createProduct,
+  productController.createProduct.bind(productController),
 );
+
+router.put(
+  "/:id",
+  authorizedMiddleware,
+  adminMiddleware,
+  uploads.array("image", 3),
+  productController.updateProduct.bind(productController),
+);
+
+router.put(
+  "/:id/restock",
+  authorizedMiddleware,
+  adminMiddleware,
+  productController.restockProduct.bind(productController),
+);
+
 router.delete(
   "/:id",
   authorizedMiddleware,
   adminMiddleware,
-  productController.deleteProduct,
-);
-router.put(
-  "/update-image",
-  authorizedMiddleware,
-  adminMiddleware,
-  uploads.array("image", 3),
-  productController.updateProduct,
+  productController.deleteProduct.bind(productController),
 );
 
-router.put(
-  "/:id",
-  authorizedMiddleware,
-  uploads.array("image", 3),
-  adminMiddleware,
-  productController.updateProduct,
-);
-router.get("/", productController.getAllProducts);
-router.get("/category/:category", productController.getProductsByCategory);
-router.get("/recent", productController.getRecentlyAdded);
-router.get("/trending", productController.getTrending);
-router.get("/popular", productController.getMostPopular);
-router.get("/top-rated", productController.getTopRated);
+/* =======================
+   PUBLIC
+======================= */
 
-router.get("/:id", productController.getProductById);
+//  Get all
+router.get("/", productController.getAllProducts.bind(productController));
+
+router.get(
+  "/category/:category",
+  productController.getProductsByCategory.bind(productController),
+);
+
+router.get(
+  "/recent",
+  productController.getRecentlyAdded.bind(productController),
+);
+
+router.get("/trending", productController.getTrending.bind(productController));
+
+router.get(
+  "/popular",
+  productController.getMostPopular.bind(productController),
+);
+
+router.get("/top-rated", productController.getTopRated.bind(productController));
+
+router.get(
+  "/out-of-stock",
+  productController.getOutOfStockProducts.bind(productController),
+);
+router.patch(
+  "/:id/view",
+  productController.incrementViewCount.bind(productController),
+);
+
+router.get("/:id", productController.getProductById.bind(productController));
 
 export default router;

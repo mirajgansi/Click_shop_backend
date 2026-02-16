@@ -10,7 +10,6 @@ export const CreateProductDto = ProductSchema.pick({
   nutritionalInfo: true,
   category: true,
   inStock: true,
-  sku: true,
 }).extend({
   existingImages: z.union([z.string(), z.array(z.string())]).optional(),
   image: z.string().optional(),
@@ -30,18 +29,14 @@ export const UpdateProductDto = ProductSchema.pick({
   nutritionalInfo: true,
   category: true,
   inStock: true,
-  sku: true,
 })
   .partial()
   .extend({
-    // ✅ add this
     existingImages: z.array(z.string()).optional(),
 
-    // ✅ ensure multipart/form-data works
     price: z.coerce.number().positive().optional(),
     inStock: z.coerce.number().int().min(0).optional(),
 
-    // ✅ allow empty string clears (optional but helpful)
     manufacturer: z.string().optional().or(z.literal("")),
     manufactureDate: z.string().optional().or(z.literal("")),
     expireDate: z.string().optional().or(z.literal("")),
@@ -49,5 +44,20 @@ export const UpdateProductDto = ProductSchema.pick({
     sku: z.string().optional().or(z.literal("")),
   });
 
+export const RestockProductDto = z.object({
+  quantity: z.coerce.number().int().min(0),
+  mode: z.enum(["set", "add"]).optional().default("set"),
+});
+
+export type RestockProductDto = z.infer<typeof RestockProductDto>;
+
+export const OutOfStockQueryDto = z.object({
+  page: z.coerce.number().int().min(1).optional(),
+  size: z.union([z.literal("all"), z.coerce.number().int().min(1)]).optional(),
+  search: z.string().optional(),
+  category: z.string().optional(),
+});
+
+export type OutOfStockQueryDto = z.infer<typeof OutOfStockQueryDto>;
 export type CreateProductDto = z.infer<typeof CreateProductDto>;
 export type UpdateProductDto = z.infer<typeof UpdateProductDto>;

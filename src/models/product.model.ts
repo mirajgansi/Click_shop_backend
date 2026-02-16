@@ -22,8 +22,6 @@ const ProductSchema = new Schema<ProductType>(
     totalRevenue: { type: Number, default: 0 },
     viewCount: { type: Number, default: 0 },
 
-    sku: { type: String, unique: true, sparse: true },
-
     averageRating: { type: Number, default: 0, min: 0, max: 5 },
     reviewCount: { type: Number, default: 0, min: 0 },
   },

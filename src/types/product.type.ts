@@ -2,7 +2,7 @@ import z from "zod";
 export const CATEGORIES = [
   "meat",
   "oil",
-  "pluse",
+  "pulses",
   "bakery",
   "snacks",
   "beverages",
@@ -40,7 +40,6 @@ export const ProductSchema = z.object({
   //   .int("Stock must be an integer")
   //   .min(0, "Stock cannot be negative")
   //   .default(0),
-  sku: z.string().optional,
 
   totalSold: z.number().int().min(0).default(0),
 

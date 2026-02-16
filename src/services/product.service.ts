@@ -122,15 +122,89 @@ export class ProductService {
   }
 
   // ---------------- OPTIONAL: analytics helpers ----------------
-  //   async incrementViewCount(productId: string) {
-  //     // Better if repository supports $inc.
-  //     const product = await productRepository.getProductById(productId);
-  //     if (!product) throw new HttpError(404, "Product not found");
+  async incrementViewCount(productId: string) {
+    // Better if repository supports $inc.
+    const product = await productRepository.getProductById(productId);
+    if (!product) throw new HttpError(404, "Product not found");
 
-  //     const updated = await productRepository.updateProduct(productId, {
-  //       viewCount: (product.viewCount ?? 0) + 1,
-  //     } as any);
+    const updated = await productRepository.updateProduct(productId, {
+      viewCount: (product.viewCount ?? 0) + 1,
+    } as any);
 
-  //     return updated;
-  //   }
+    return updated;
+  }
+
+  async restockProduct(
+    productId: string,
+    input: { quantity: number; mode?: "set" | "add" },
+  ) {
+    const quantity = Number(input.quantity);
+    if (!Number.isFinite(quantity) || quantity < 0) {
+      throw new HttpError(400, "Quantity must be a valid number (>= 0)");
+    }
+
+    const product = await productRepository.getProductById(productId);
+    if (!product) throw new HttpError(404, "Product not found");
+
+    const mode = input.mode ?? "set";
+    const nextStock =
+      mode === "add" ? (product.inStock ?? 0) + quantity : quantity;
+
+    const updated = await productRepository.updateProduct(productId, {
+      inStock: nextStock,
+    } as UpdateProductDto);
+
+    return updated;
+  }
+
+  // ---------------- OUT OF STOCK ----------------
+  async getOutOfStockProducts({
+    page,
+    size,
+    search,
+    category,
+  }: {
+    page?: string;
+    size?: string;
+    search?: string;
+    category?: string;
+  }) {
+    const currentPage = page ? parseInt(page) : 1;
+    const pageSize =
+      size === "all" ? Number.MAX_SAFE_INTEGER : size ? parseInt(size) : 10;
+
+    const currentSearch = (search ?? "").trim();
+    const currentCategory = (category ?? "").trim();
+    const normalizedCategory =
+      !currentCategory || currentCategory === "All" ? "" : currentCategory;
+
+    const filter: any = { inStock: { $lte: 0 } };
+
+    if (currentSearch) {
+      filter.$or = [
+        { name: { $regex: currentSearch, $options: "i" } },
+        // add more fields if you want:
+        // { brand: { $regex: currentSearch, $options: "i" } },
+      ];
+    }
+
+    if (normalizedCategory) filter.category = normalizedCategory;
+
+    const [products, total] = await Promise.all([
+      ProductModel.find(filter)
+        .sort({ updatedAt: -1, createdAt: -1 })
+        .skip((currentPage - 1) * pageSize)
+        .limit(pageSize),
+      ProductModel.countDocuments(filter),
+    ]);
+
+    const pagination = {
+      page: currentPage,
+      size: pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize),
+    };
+
+    return { products, pagination };
+  }
 }

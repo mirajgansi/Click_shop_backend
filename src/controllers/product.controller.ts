@@ -1,7 +1,11 @@
 import { Request, Response } from "express";
 import z from "zod";
 import { ProductService } from "../services/product.service";
-import { CreateProductDto, UpdateProductDto } from "../dtos/product.dto";
+import {
+  CreateProductDto,
+  RestockProductDto,
+  UpdateProductDto,
+} from "../dtos/product.dto";
 import mongoose from "mongoose";
 
 const productService = new ProductService();
@@ -9,6 +13,13 @@ interface QueryParams {
   page?: string;
   size?: string;
   search?: string;
+}
+
+interface QueryParams {
+  page?: string;
+  size?: string;
+  search?: string;
+  category?: string;
 }
 export class ProductController {
   // ---------------- CREATE (ADMIN ONLY) ----------------
@@ -279,6 +290,101 @@ export class ProductController {
         success: true,
         message: "Product deleted successfully",
         data: result,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode ?? 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
+    }
+  }
+
+  async restockProduct(req: Request, res: Response) {
+    try {
+      const adminId = req.user?._id;
+      if (!adminId) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+      }
+
+      const productId = req.params.id;
+      if (!mongoose.Types.ObjectId.isValid(productId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid product id" });
+      }
+
+      const parsed = RestockProductDto.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          message: z.prettifyError(parsed.error),
+        });
+      }
+
+      const updated = await productService.restockProduct(
+        productId,
+        parsed.data,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Product restocked successfully",
+        data: updated,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode ?? 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
+    }
+  }
+
+  // ---------------- OUT OF STOCK (ADMIN/ANY) ----------------
+  async getOutOfStockProducts(req: Request, res: Response) {
+    try {
+      const { page, size, search, category }: QueryParams = req.query;
+
+      const result = await productService.getOutOfStockProducts({
+        page,
+        size,
+        search,
+        category,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Out of stock products fetched successfully",
+        data: result,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode ?? 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
+    }
+  }
+
+  // ---------------- VIEW COUNT (PUBLIC) ----------------
+  // call this when product detail page opens
+  async incrementViewCount(req: Request, res: Response) {
+    try {
+      const productId = req.params.id;
+
+      if (!mongoose.Types.ObjectId.isValid(productId)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid product id",
+        });
+      }
+
+      const updated = await productService.incrementViewCount(productId);
+
+      return res.status(200).json({
+        success: true,
+        message: "View count incremented",
+        data: updated,
       });
     } catch (error: any) {
       return res.status(error.statusCode ?? 500).json({
