@@ -35,4 +35,5 @@ router.get(
   // adminMiddleware, // enable if needed
   controller.getDriversByStats.bind(controller),
 );
+
 export default router;

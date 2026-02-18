@@ -358,7 +358,6 @@ export class OrderService {
           throw new HttpError(400, "Order must be shipped before delivered");
         }
 
-        // ✅ STATUS UPDATE
         order.status = status;
 
         if (status === "delivered") {

@@ -61,7 +61,11 @@ export class OrderController {
       const order = await orderService.getOrderById(req.params.id);
 
       // user can only see own order (admin can see all)
-      if (role !== "admin" && String(order.userId) !== String(userId)) {
+      if (
+        role !== "admin" &&
+        role !== "driver" &&
+        String(order.userId) !== String(userId)
+      ) {
         throw new HttpError(403, "Forbidden");
       }
 

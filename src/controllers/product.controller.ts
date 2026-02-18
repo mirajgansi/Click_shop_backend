@@ -143,13 +143,21 @@ export class ProductController {
   // recently added
   async getRecentlyAdded(req: Request, res: Response) {
     try {
-      const limit = Number(req.query.limit ?? 10);
-      const products = await productService.getRecentlyAdded(limit);
+      const page = Number(req.query.page ?? 1);
+      const size = Number(req.query.size ?? 10);
+
+      const result = await productService.getRecentlyAdded(page, size);
 
       return res.status(200).json({
         success: true,
         message: "Recently added products fetched successfully",
-        data: products,
+        data: result.products,
+        pagination: {
+          page,
+          size,
+          total: result.total,
+          totalPages: Math.ceil(result.total / size),
+        },
       });
     } catch (error: any) {
       return res.status(error.statusCode ?? 500).json({
@@ -159,16 +167,24 @@ export class ProductController {
     }
   }
 
-  // trending = highest selling
+  // trending
   async getTrending(req: Request, res: Response) {
     try {
-      const limit = Number(req.query.limit ?? 10);
-      const products = await productService.getTrending(limit);
+      const page = Number(req.query.page ?? 1);
+      const size = Number(req.query.size ?? 10);
+
+      const result = await productService.getTrending(page, size);
 
       return res.status(200).json({
         success: true,
         message: "Trending products fetched successfully",
-        data: products,
+        data: result.products,
+        pagination: {
+          page,
+          size,
+          total: result.total,
+          totalPages: Math.ceil(result.total / size),
+        },
       });
     } catch (error: any) {
       return res.status(error.statusCode ?? 500).json({
@@ -178,16 +194,24 @@ export class ProductController {
     }
   }
 
-  // most popular = most viewed
+  // popular
   async getMostPopular(req: Request, res: Response) {
     try {
-      const limit = Number(req.query.limit ?? 10);
-      const products = await productService.getMostPopular(limit);
+      const page = Number(req.query.page ?? 1);
+      const size = Number(req.query.size ?? 10);
+
+      const result = await productService.getMostPopular(page, size);
 
       return res.status(200).json({
         success: true,
         message: "Popular products fetched successfully",
-        data: products,
+        data: result.products,
+        pagination: {
+          page,
+          size,
+          total: result.total,
+          totalPages: Math.ceil(result.total / size),
+        },
       });
     } catch (error: any) {
       return res.status(error.statusCode ?? 500).json({
@@ -200,13 +224,21 @@ export class ProductController {
   // top rated
   async getTopRated(req: Request, res: Response) {
     try {
-      const limit = Number(req.query.limit ?? 10);
-      const products = await productService.getTopRated(limit);
+      const page = Number(req.query.page ?? 1);
+      const size = Number(req.query.size ?? 10);
+
+      const result = await productService.getTopRated(page, size);
 
       return res.status(200).json({
         success: true,
         message: "Top rated products fetched successfully",
-        data: products,
+        data: result.products,
+        pagination: {
+          page,
+          size,
+          total: result.total,
+          totalPages: Math.ceil(result.total / size),
+        },
       });
     } catch (error: any) {
       return res.status(error.statusCode ?? 500).json({
@@ -216,15 +248,12 @@ export class ProductController {
     }
   }
 
-  // ---------------- UPDATE (ADMIN ONLY) ----------------
   async updateProduct(req: Request, res: Response) {
     try {
       const productId = req.params.id;
 
-      // 1) clone body (multer gives strings)
       const body: any = { ...req.body };
 
-      // 2) parse existingImages (JSON string -> array)
       if (typeof body.existingImages === "string") {
         try {
           body.existingImages = JSON.parse(body.existingImages);

@@ -13,7 +13,6 @@ router.use(authorizedMiddleware);
 
 router.post("/", controller.createFromCart.bind(controller));
 router.get("/me", controller.getMyOrders.bind(controller));
-router.get("/:id", controller.getOrderById.bind(controller));
 
 // admin
 router.get("/", adminMiddleware, controller.getAllOrders.bind(controller));
@@ -22,7 +21,6 @@ router.patch(
   adminMiddleware,
   controller.updateStatus.bind(controller),
 );
-router.put("/:id/cancel", controller.cancelMyOrder);
 // // driver get assigned orders
 router.get(
   "/driver/my-orders",
@@ -40,5 +38,7 @@ router.patch(
   adminMiddleware,
   controller.assignDriver.bind(controller),
 );
+router.get("/:id", controller.getOrderById.bind(controller));
+router.put("/:id/cancel", controller.cancelMyOrder);
 
 export default router;

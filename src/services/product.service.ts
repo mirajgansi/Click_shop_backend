@@ -74,29 +74,58 @@ export class ProductService {
     return productRepository.getProductsByCategory(clean);
   }
   // recently added
-  async getRecentlyAdded(limit = 10) {
-    return await ProductModel.find({ inStock: { $gt: 0 } })
-      .sort({ createdAt: -1 })
-      .limit(limit);
+  async getRecentlyAdded(page: number = 1, size: number = 10) {
+    const skip = (page - 1) * size;
+    const filter = { inStock: { $gt: 0 } };
+
+    const [products, total] = await Promise.all([
+      ProductModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(size),
+      ProductModel.countDocuments(filter),
+    ]);
+
+    return { products, total };
   }
 
   // trending = highest selling
-  async getTrending(limit = 10) {
-    return await ProductModel.find({ inStock: { $gt: 0 } })
-      .sort({ totalSold: -1 })
-      .limit(limit);
+  async getTrending(page: number = 1, size: number = 10) {
+    const skip = (page - 1) * size;
+    const filter = { inStock: { $gt: 0 } };
+
+    const [products, total] = await Promise.all([
+      ProductModel.find(filter).sort({ totalSold: -1 }).skip(skip).limit(size),
+      ProductModel.countDocuments(filter),
+    ]);
+
+    return { products, total };
   }
+
   // popular = most viewed
-  async getMostPopular(limit = 10) {
-    return await ProductModel.find({ inStock: { $gt: 0 } })
-      .sort({ viewCount: -1 })
-      .limit(limit);
+  async getMostPopular(page: number = 1, size: number = 10) {
+    const skip = (page - 1) * size;
+    const filter = { inStock: { $gt: 0 } };
+
+    const [products, total] = await Promise.all([
+      ProductModel.find(filter).sort({ viewCount: -1 }).skip(skip).limit(size),
+      ProductModel.countDocuments(filter),
+    ]);
+
+    return { products, total };
   }
+
   // top rated
-  async getTopRated(limit = 10) {
-    return await ProductModel.find({ inStock: { $gt: 0 } })
-      .sort({ averageRating: -1, reviewCount: -1 })
-      .limit(limit);
+  async getTopRated(page: number = 1, size: number = 10) {
+    const skip = (page - 1) * size;
+    const filter = { inStock: { $gt: 0 } };
+
+    const [products, total] = await Promise.all([
+      ProductModel.find(filter)
+        .sort({ averageRating: -1, reviewCount: -1 })
+        .skip(skip)
+        .limit(size),
+      ProductModel.countDocuments(filter),
+    ]);
+
+    return { products, total };
   }
 
   // ---------------- UPDATE (ADMIN) ----------------
