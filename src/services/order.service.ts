@@ -1,12 +1,13 @@
 import mongoose, { Types } from "mongoose";
 import { OrderModel } from "../models/order.model";
 import { CartModel } from "../models/cart.model";
-import { ProductModel } from "../models/product.model"; // ✅ adjust path/name if different
+import { ProductModel } from "../models/product.model";
 import { CreateOrderDto } from "../dtos/order.dto";
 import { HttpError } from "../errors/http-error";
 import { OrderRepository } from "../repositories/order.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { UserModel } from "../models/user.model";
+import { NotificationService } from "./notification.service";
 
 type CreateOrderInput = {
   shippingFee?: number;
@@ -15,11 +16,8 @@ type CreateOrderInput = {
 };
 type DriverStatus = "shipped" | "delivered";
 
-type AuthUser = {
-  _id: string;
-  role: "admin" | "user" | "driver";
-};
 const orderRepository = new OrderRepository();
+const notificationService = new NotificationService();
 
 export class OrderService {
   async createFromCart(userId: string, input: CreateOrderInput) {
@@ -187,16 +185,14 @@ export class OrderService {
   ) {
     if (!orderId) throw new HttpError(400, "Order id is required");
 
-    // 1) fetch order first (needed for rules)
     const order = await OrderModel.findById(orderId);
     if (!order) throw new HttpError(404, "Order not found");
 
-    // 2) if status is shipped => driver is required
-    if (payload.status === "shipped" && !payload.driverId) {
+    if (payload.status === "shipped" && !payload.driverId && !order.driverId) {
       throw new HttpError(400, "Driver must be assigned before shipping");
     }
 
-    // 3) if driverId is provided => validate it is a driver user
+    // validate driver if provided
     let driverObjectId: any = undefined;
     if (payload.driverId) {
       if (!mongoose.Types.ObjectId.isValid(payload.driverId)) {
@@ -205,35 +201,95 @@ export class OrderService {
 
       const driver = await UserModel.findById(payload.driverId);
       if (!driver) throw new HttpError(404, "Driver not found");
-      if (driver.role !== "driver") {
+      if (driver.role !== "driver")
         throw new HttpError(400, "Selected user is not a driver");
-      }
 
       driverObjectId = driver._id;
     }
 
-    // 4) Build update object
-    const update: any = {
-      status: payload.status,
-    };
-
+    const update: any = { status: payload.status };
     if (payload.paymentStatus) update.paymentStatus = payload.paymentStatus;
 
-    // only set driverId if provided (or explicitly null to unassign)
     if (payload.driverId === null) update.driverId = null;
     else if (driverObjectId) update.driverId = driverObjectId;
 
-    // (optional) if cancelled => unassign driver automatically
-    if (payload.status === "cancelled") {
-      update.driverId = null;
-    }
+    if (payload.status === "cancelled") update.driverId = null;
 
-    // 5) Update and return
     const updated = await OrderModel.findByIdAndUpdate(orderId, update, {
       new: true,
     });
-
     if (!updated) throw new HttpError(404, "Order not found");
+
+    // ---------------------------
+    // Notifications section
+    // ---------------------------
+
+    const orderUrlUser = `/orders/${updated._id}`;
+    const orderUrlDriver = `/driver/orders/${updated._id}`;
+
+    if (payload.driverId && updated.driverId) {
+      await notificationService.notify({
+        to: updated.driverId.toString(),
+        type: "driver_assigned",
+        title: "New Order Assigned",
+        message: "You have been assigned an order.",
+        data: { orderId: updated._id.toString(), url: orderUrlDriver },
+      });
+
+      await notificationService.notify({
+        to: updated.userId.toString(),
+        type: "driver_assigned",
+        title: "Driver Assigned",
+        message: "A driver has been assigned to your order.",
+        data: { orderId: updated._id.toString(), url: orderUrlUser },
+      });
+    }
+
+    // 2) Status based notifications (to user + driver if exists)
+    if (payload.status === "shipped") {
+      // user
+      await notificationService.notify({
+        to: updated.userId.toString(),
+        type: "order_shipped",
+        title: "Order Shipped",
+        message: "Your order has been shipped.",
+        data: { orderId: updated._id.toString(), url: orderUrlUser },
+      });
+
+      // driver (if assigned)
+      if (updated.driverId) {
+        await notificationService.notify({
+          to: updated.driverId.toString(),
+          type: "order_shipped",
+          title: "Order Shipped",
+          message: "Order status is now shipped.",
+          data: { orderId: updated._id.toString(), url: orderUrlDriver },
+        });
+      }
+    }
+
+    if (payload.status === "delivered") {
+      // user
+      await notificationService.notify({
+        to: updated.userId.toString(),
+        type: "order_delivered",
+        title: "Order Delivered",
+        message: "Your order has been delivered.",
+        data: { orderId: updated._id.toString(), url: orderUrlUser },
+      });
+
+      // driver
+      if (updated.driverId) {
+        await notificationService.notify({
+          to: updated.driverId.toString(),
+          type: "order_delivered",
+          title: "Delivered ",
+          message: "You marked the order as delivered.",
+          data: { orderId: updated._id.toString(), url: orderUrlDriver },
+        });
+      }
+    }
+
     return updated;
   }
 
@@ -279,7 +335,6 @@ export class OrderService {
     const order = await OrderModel.findById(orderId);
     if (!order) throw new HttpError(404, "Order not found");
 
-    // Optional rule: don’t assign if cancelled/delivered
     if (order.status === "cancelled" || order.status === "delivered") {
       throw new HttpError(
         400,
@@ -292,9 +347,37 @@ export class OrderService {
     if (driver.role !== "driver")
       throw new HttpError(400, "Selected user is not a driver");
 
-    const updated = await orderRepository.assignDriver(orderId, driverId);
-    if (!updated) throw new HttpError(404, "Order not found");
-    return updated;
+    order.driverId = driver._id;
+
+    await order.save();
+
+    await notificationService.notify({
+      to: driverId,
+      from: userId,
+      type: "driver_assigned",
+      title: "New Order Assigned",
+      message: "You have been assigned an order.",
+      data: {
+        orderId: order._id.toString(),
+        url: `/driver/orders/${order._id}`,
+      },
+      role: "admin",
+    });
+
+    await notificationService.notify({
+      to: order.userId.toString(),
+      from: userId,
+      type: "driver_assigned",
+      title: "Driver Assigned",
+      message: "A driver has been assigned to your order.",
+      data: {
+        orderId: order._id.toString(),
+        url: `/orders/${order._id}`,
+      },
+      role: "admin",
+    });
+
+    return order;
   }
 
   //driver assing orders

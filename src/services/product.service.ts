@@ -3,9 +3,12 @@ import { ProductRepository } from "../repositories/product.repository";
 // import { UserRepository } from "../repositories/user.repository"; // only if you want to validate admin exists
 import { CreateProductDto, UpdateProductDto } from "../dtos/product.dto";
 import { ProductModel } from "../models/product.model";
+import { UserModel } from "../models/user.model";
+import { NotificationService } from "./notification.service";
 
 const productRepository = new ProductRepository();
 // const userRepository = new UserRepository(); // optional
+const notificationService = new NotificationService();
 
 export class ProductService {
   // ---------------- CREATE (ADMIN) ----------------
@@ -13,9 +16,25 @@ export class ProductService {
     const nameCheck = await productRepository.getProductByName(data.name);
     if (nameCheck) throw new HttpError(409, "Product name already in use");
 
-    const newProduct = await productRepository.createProduct({
-      ...data,
-    });
+    const newProduct = await productRepository.createProduct({ ...data });
+
+    const users = await UserModel.find({ role: "user" }).select("_id");
+
+    await Promise.all(
+      users.map((u) =>
+        notificationService.notify({
+          to: u._id.toString(),
+          from: adminId,
+          type: "product_added",
+          title: "New Product Added",
+          message: `${newProduct.name} is now available!`,
+          data: {
+            productId: newProduct._id.toString(),
+            url: `/products/${newProduct._id}`,
+          },
+        }),
+      ),
+    );
 
     return newProduct;
   }

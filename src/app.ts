@@ -9,7 +9,7 @@ import adminUserRoutes from "./routes/admin/user.route";
 import orderRoutes from "./routes/order.route";
 import diverRoutes from "./routes/driver.route";
 import adminAnalyticsRoute from "./routes/admin/admin.analytics.route";
-
+import notificationRoutes from "./routes/notification.route";
 import cors from "cors";
 import path from "path";
 
@@ -29,6 +29,8 @@ app.use((req, _res, next) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api/notifications", notificationRoutes);
+
 app.use("/api/admin/users", adminUserRoutes);
 app.get("/", (req: Request, res: Response) => {
   return res
