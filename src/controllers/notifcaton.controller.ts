@@ -11,7 +11,7 @@ const service = new NotificationService();
 export class NotificationController {
   async create(req: Request, res: Response) {
     const dto = createNotificationDto.parse(req.body);
-    const notif = await service.create(dto);
+    const notif = await service.notify(dto);
     res.status(201).json({ success: true, data: notif });
   }
 

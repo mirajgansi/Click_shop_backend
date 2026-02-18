@@ -1,5 +1,4 @@
 import { Schema, model, Types } from "mongoose";
-import { CreateNotificationDTO } from "../dtos/notificatoin.dto";
 
 export type NotificationType =
   | "driver_assigned"
@@ -79,8 +78,3 @@ export const NotificationModel = model<NotificationDoc>(
   "Notification",
   notificationSchema,
 );
-export class NotificationService {
-  async notify(dto: CreateNotificationDTO) {
-    return NotificationModel.create(dto);
-  }
-}

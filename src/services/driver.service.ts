@@ -3,7 +3,10 @@ import { DriverRepository } from "../repositories/driver.repository";
 import { HttpError } from "../errors/http-error";
 import { OrderModel } from "../models/order.model";
 import { ProductModel } from "../models/product.model";
+import { NotificationService } from "./notification.service";
+
 type DriverStatus = "shipped" | "delivered";
+const notificationService = new NotificationService();
 
 export class DriverService {
   constructor(private repo = new DriverRepository()) {}
@@ -119,6 +122,34 @@ export class DriverService {
       return { success: false, message: "Order already delivered" };
 
     const updated = await this.repo.updateOrderStatus(orderId, status);
+    if (!updated) return { success: false, message: "Order not found" }; // ✅ FIX
+
+    if (status === "shipped") {
+      await notificationService.notify({
+        to: updated.userId.toString(),
+        type: "order_shipped",
+        title: "Order Shipped",
+        message: "Your order has been shipped.",
+        data: {
+          orderId: updated._id.toString(),
+          url: `/orders/${updated._id}`,
+        },
+      });
+    }
+
+    if (status === "delivered") {
+      await notificationService.notify({
+        to: updated.userId.toString(),
+        type: "order_delivered",
+        title: "Order Delivered",
+        message: "Your order has been delivered.",
+        data: {
+          orderId: updated._id.toString(),
+          url: `/orders/${updated._id}`,
+        },
+      });
+    }
+
     return { success: true, message: "Order updated", data: updated };
   }
 

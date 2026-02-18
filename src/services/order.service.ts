@@ -346,7 +346,8 @@ export class OrderService {
     if (!driver) throw new HttpError(404, "Driver not found");
     if (driver.role !== "driver")
       throw new HttpError(400, "Selected user is not a driver");
-
+    order.status = "shipped";
+    await order.save();
     order.driverId = driver._id;
 
     await order.save();

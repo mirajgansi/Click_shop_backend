@@ -1,17 +1,13 @@
+import { io } from "socket.io-client";
 import {
   CreateNotificationDTO,
   ListNotificationsQueryDTO,
   MarkAsReadDTO,
 } from "../dtos/notificatoin.dto";
-import { NotificationModel } from "../models/notification.model";
 import { NotificationRepository } from "../repositories/notification.repository";
 
 export class NotificationService {
   constructor(private repo = new NotificationRepository()) {}
-
-  create(dto: CreateNotificationDTO) {
-    return this.repo.create(dto);
-  }
 
   listForUser(userId: string, query: ListNotificationsQueryDTO) {
     return this.repo.findByUser(userId, {
@@ -20,15 +16,20 @@ export class NotificationService {
       read: query.read,
     });
   }
+
   async notify(data: CreateNotificationDTO) {
-    return this.repo.create(data);
+    const saved = await this.repo.create(data);
+
+    if (io) {
+      io(saved.to.toString()).emit("notification", saved);
+    }
+
+    return saved;
   }
+
   async markRead(userId: string, dto: MarkAsReadDTO) {
     const updated = await this.repo.markRead(dto.notificationId, userId);
-    if (!updated) {
-      // keep simple; you can throw custom error class too
-      throw new Error("Notification not found");
-    }
+    if (!updated) throw new Error("Notification not found");
     return updated;
   }
 
