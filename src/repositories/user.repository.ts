@@ -90,4 +90,11 @@ export class UserRepository implements IUserRepository {
     const result = await UserModel.findByIdAndDelete(id);
     return result ? true : false;
   }
+  async saveFcmToken(userId: string, token: string) {
+    return UserModel.findByIdAndUpdate(
+      userId,
+      { fcmToken: token }, // or $addToSet: { fcmTokens: token }
+      { new: true },
+    );
+  }
 }

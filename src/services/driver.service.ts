@@ -17,12 +17,11 @@ export class DriverService {
     status: DriverStatus,
   ) {
     if (!driverId) throw new HttpError(401, "Unauthorized");
-
-    if (!mongoose.Types.ObjectId.isValid(orderId)) {
+    if (!mongoose.Types.ObjectId.isValid(orderId))
       throw new HttpError(400, "Invalid order id");
-    }
 
     const session = await mongoose.startSession();
+
     try {
       const updated = await session.withTransaction(async () => {
         const order = await OrderModel.findById(orderId).session(session);
@@ -46,29 +45,42 @@ export class DriverService {
             `Cannot update order when status is ${order.status}`,
           );
         }
+
         if (status === "delivered" && order.status !== "shipped") {
           throw new HttpError(400, "Order must be shipped before delivered");
         }
 
         order.status = status;
-        await order.save({ session });
 
         if (status === "delivered") {
+          order.paymentStatus = "paid";
+
           for (const it of order.items as any[]) {
             await ProductModel.updateOne(
               { _id: it.productId },
-              {
-                $inc: {
-                  totalSold: it.quantity,
-                  totalRevenue: it.lineTotal,
-                },
-              },
+              { $inc: { totalSold: it.quantity, totalRevenue: it.lineTotal } },
               { session },
             );
           }
         }
 
+        await order.save({ session });
         return order;
+      });
+
+      const orderIdStr = updated._id.toString();
+
+      await notificationService.notify({
+        to: updated.userId.toString(),
+        type: status === "delivered" ? "order_delivered" : "order_shipped",
+        title: status === "delivered" ? "Order Delivered" : "Order Shipped",
+        message:
+          status === "delivered"
+            ? "Your order has been delivered."
+            : "Your order has been shipped.",
+        data: {
+          orderId: orderIdStr,
+        },
       });
 
       return updated;
@@ -76,35 +88,6 @@ export class DriverService {
       session.endSession();
     }
   }
-
-  //   async assignDriver(orderId: string, driverId: string) {
-  //     if (!mongoose.Types.ObjectId.isValid(orderId))
-  //       return { success: false, message: "Invalid order id" };
-  //     if (!mongoose.Types.ObjectId.isValid(driverId))
-  //       return { success: false, message: "Invalid driver id" };
-
-  //     const order = await this.repo.findOrderById(orderId);
-  //     if (!order) return { success: false, message: "Order not found" };
-
-  //     if (order.status === "cancelled" || order.status === "delivered") {
-  //       return {
-  //         success: false,
-  //         message: `Cannot assign driver when order is ${order.status}`,
-  //       };
-  //     }
-
-  //     const driver = await this.repo.findDriverById(driverId);
-  //     if (!driver) return { success: false, message: "Driver not found" };
-  //     if (driver.role !== "driver")
-  //       return { success: false, message: "Selected user is not a driver" };
-
-  //     if (driver.status !== "active") {
-  //       return { success: false, message: "Driver is not active" };
-  //     }
-
-  //     const updated = await this.repo.assignDriverToOrder(orderId, driverId);
-  //     return { success: true, message: "Driver assigned", data: updated };
-  //   }
 
   async driverUpdateOrderStatus(
     orderId: string,
@@ -122,32 +105,54 @@ export class DriverService {
       return { success: false, message: "Order already delivered" };
 
     const updated = await this.repo.updateOrderStatus(orderId, status);
-    if (!updated) return { success: false, message: "Order not found" }; // ✅ FIX
+    if (!updated) return { success: false, message: "Order not found" };
+
+    const orderIdStr = updated._id.toString();
+    const userIdStr = updated.userId.toString();
+    const driverIdStr = updated.driverId?.toString(); // might be undefined
 
     if (status === "shipped") {
+      // notify user
       await notificationService.notify({
-        to: updated.userId.toString(),
+        to: userIdStr,
         type: "order_shipped",
         title: "Order Shipped",
         message: "Your order has been shipped.",
-        data: {
-          orderId: updated._id.toString(),
-          url: `/orders/${updated._id}`,
-        },
+        data: { orderId: orderIdStr },
       });
+
+      // notify driver (optional)
+      if (driverIdStr) {
+        await notificationService.notify({
+          to: driverIdStr,
+          type: "order_shipped",
+          title: "Marked as Shipped",
+          message: "You marked the order as shipped.",
+          data: { orderId: orderIdStr },
+        });
+      }
     }
 
     if (status === "delivered") {
+      // notify user
       await notificationService.notify({
-        to: updated.userId.toString(),
+        to: userIdStr,
         type: "order_delivered",
         title: "Order Delivered",
         message: "Your order has been delivered.",
-        data: {
-          orderId: updated._id.toString(),
-          url: `/orders/${updated._id}`,
-        },
+        data: { orderId: orderIdStr },
       });
+
+      // notify driver (optional)
+      if (driverIdStr) {
+        await notificationService.notify({
+          to: driverIdStr,
+          type: "order_delivered",
+          title: "Delivered",
+          message: "You marked the order as delivered.",
+          data: { orderId: orderIdStr },
+        });
+      }
     }
 
     return { success: true, message: "Order updated", data: updated };

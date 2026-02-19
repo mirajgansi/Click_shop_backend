@@ -1,8 +1,8 @@
+import http from "http";
 import app from "./app";
 import { PORT } from "./config";
 import { initSocket } from "./config/socket";
 import { connectDatabase } from "./database/mongodb";
-import http from "http";
 
 async function startServer() {
   await connectDatabase();
@@ -11,7 +11,7 @@ async function startServer() {
   initSocket(server);
 
   server.listen(PORT, () => {
-    console.log(`Server: http://localhost:${PORT}`);
+    console.log(`Server running: http://localhost:${PORT}`);
   });
 }
 

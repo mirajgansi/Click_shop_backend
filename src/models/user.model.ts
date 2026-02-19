@@ -18,9 +18,12 @@ const UserSchema: Schema = new Schema<UserType>(
       default: "user",
     },
 
+    fcmToken: { type: String, default: null },
+
     passwordResetCode: { type: String, default: null },
     passwordResetExpires: { type: Date, default: null },
   },
+
   {
     timestamps: true, // auto createdAt and updatedAt
   },
