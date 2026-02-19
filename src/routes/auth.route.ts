@@ -19,7 +19,7 @@ router.put(
 router.delete("/me", authorizedMiddleware, authController.deleteMe);
 
 router.post("/request-password-reset", authController.requestPasswordChange);
-
+router.get("/me/fcm-token", authorizedMiddleware, authController.getFcmToken);
 router.post("/reset-password", authController.resetPassword);
-
+router.post("/me/fcm-token", authorizedMiddleware, authController.saveFcmToken);
 export default router;

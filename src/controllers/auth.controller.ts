@@ -1,9 +1,13 @@
 import { UserService } from "../services/user.service";
-import { CreateUserDTO, LoginUserDTO, UpdateUserDTO } from "../dtos/user.dto";
+import {
+  CreateUserDTO,
+  LoginUserDTO,
+  SaveFcmTokenDTO,
+  UpdateUserDTO,
+} from "../dtos/user.dto";
 import { Request, Response } from "express";
-import z, { success } from "zod";
-import { error } from "node:console";
-import { HttpError } from "../errors/http-error";
+import z from "zod";
+
 let userService = new UserService();
 export class AuthController {
   async register(req: Request, res: Response) {
@@ -33,7 +37,68 @@ export class AuthController {
       });
     }
   }
+  async saveFcmToken(req: Request, res: Response) {
+    try {
+      const parsed = SaveFcmTokenDTO.safeParse(req.body);
+      if (!parsed.success) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid token" });
+      }
 
+      const userId = req.user?._id;
+      if (!userId) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+      }
+
+      const updated = await userService.saveFcmToken(
+        userId.toString(),
+        parsed.data.token,
+      );
+
+      if (!updated) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "FCM token saved",
+        fcmToken: updated.fcmToken,
+      });
+    } catch (e: any) {
+      return res
+        .status(500)
+        .json({ success: false, message: e.message ?? "Server error" });
+    }
+  }
+
+  async getFcmToken(req: Request, res: Response) {
+    try {
+      const userId = (req as any).user?._id;
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Unauthorized",
+        });
+      }
+
+      const user = await userService.getUserbyId(userId);
+
+      return res.status(200).json({
+        success: true,
+        token: user.fcmToken,
+      });
+    } catch (e: any) {
+      return res.status(500).json({
+        success: false,
+        message: e.message ?? "Server error",
+      });
+    }
+  }
   async login(req: Request, res: Response) {
     try {
       const parsedData = LoginUserDTO.safeParse(req.body);

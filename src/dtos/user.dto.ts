@@ -43,3 +43,8 @@ export const UpdateProfileDTO = UserSchema.partial()
   .omit({ password: true, role: true })
   .strict();
 export type UpdateProfileDTO = z.infer<typeof UpdateProfileDTO>;
+export const SaveFcmTokenDTO = z.object({
+  token: z.string().min(10, "Invalid FCM token"),
+});
+
+export type SaveFcmTokenDTO = z.infer<typeof SaveFcmTokenDTO>;

@@ -1,10 +1,10 @@
-import { io } from "socket.io-client";
 import {
   CreateNotificationDTO,
   ListNotificationsQueryDTO,
   MarkAsReadDTO,
 } from "../dtos/notificatoin.dto";
 import { NotificationRepository } from "../repositories/notification.repository";
+import { getIO } from "../config/socket"; // adjust path
 
 export class NotificationService {
   constructor(private repo = new NotificationRepository()) {}
@@ -20,9 +20,9 @@ export class NotificationService {
   async notify(data: CreateNotificationDTO) {
     const saved = await this.repo.create(data);
 
-    if (io) {
-      io(saved.to.toString()).emit("notification", saved);
-    }
+    // realtime emit to room = userId
+    const io = getIO();
+    io.to(saved.to.toString()).emit("notification", saved);
 
     return saved;
   }

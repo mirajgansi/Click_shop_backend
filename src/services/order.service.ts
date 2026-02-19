@@ -447,25 +447,48 @@ export class OrderService {
         if (status === "delivered") {
           order.paymentStatus = "paid";
 
-          // update product stats
           for (const it of order.items as any[]) {
             await ProductModel.updateOne(
               { _id: it.productId },
-              {
-                $inc: {
-                  totalSold: it.quantity,
-                  totalRevenue: it.lineTotal,
-                },
-              },
+              { $inc: { totalSold: it.quantity, totalRevenue: it.lineTotal } },
               { session },
             );
           }
         }
 
         await order.save({ session });
-
         return order;
       });
+
+      // ✅ SEND NOTIFICATION AFTER COMMIT
+      const orderIdStr = updated._id.toString();
+      const userIdStr = updated.userId.toString();
+
+      const urlByRole = {
+        user: `/user/orders/${orderIdStr}`, // change if your user route differs
+        driver: `/driver/orders/${orderIdStr}`,
+        admin: `/admin/orders/${orderIdStr}`,
+      };
+
+      if (status === "shipped") {
+        await notificationService.notify({
+          to: userIdStr,
+          type: "order_shipped",
+          title: "Order Shipped",
+          message: "Your order has been shipped.",
+          data: { orderId: orderIdStr },
+        });
+      }
+
+      if (status === "delivered") {
+        await notificationService.notify({
+          to: userIdStr,
+          type: "order_delivered",
+          title: "Order Delivered",
+          message: "Your order has been delivered.",
+          data: { orderId: orderIdStr },
+        });
+      }
 
       return updated;
     } finally {

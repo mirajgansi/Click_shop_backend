@@ -1,32 +1,31 @@
 import { Server } from "socket.io";
+import http from "http";
 
 let io: Server | null = null;
 
-export const initSocket = (server: any) => {
+export function initSocket(server: http.Server) {
   io = new Server(server, {
-    cors: {
-      origin: ["http://localhost:3000", "http://localhost:3003"],
-      credentials: true,
-    },
+    cors: { origin: "*", credentials: true },
   });
 
   io.on("connection", (socket) => {
-    console.log("🔥 socket connected:", socket.id);
-
+    // client should send userId after connect
     socket.on("join", (userId: string) => {
-      console.log("📦 joined room:", userId);
-      socket.join(userId);
+      if (!userId) return;
+      socket.join(userId); // room = userId
+      // console.log("joined room:", userId);
     });
 
     socket.on("disconnect", () => {
-      console.log("❌ socket disconnected:", socket.id);
+      // console.log("socket disconnected");
     });
   });
 
   return io;
-};
+}
 
-export const getIO = () => {
-  if (!io) throw new Error("Socket.io not initialized");
+export function getIO() {
+  if (!io)
+    throw new Error("Socket.io not initialized. Call initSocket() first.");
   return io;
-};
+}

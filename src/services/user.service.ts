@@ -14,6 +14,15 @@ type Creator = {
 };
 
 export class UserService {
+  async saveFcmToken(userId: string, token: string) {
+    if (!token) throw new HttpError(400, "FCM token is required");
+
+    const user = await userRepository.getUserById(userId);
+    if (!user) throw new HttpError(404, "User not found");
+
+    const updated = await userRepository.saveFcmToken(userId, token);
+    return updated;
+  }
   async createUser(data: CreateUserDTO, createdBy?: Creator) {
     // business logic before creating user
     const emailCheck = await userRepository.getUserByEmail(data.email);
@@ -178,6 +187,7 @@ export class UserService {
     return { message: "Password reset successful" };
   }
 }
+
 function stripNulls<T extends Record<string, any>>(obj: T) {
   return Object.fromEntries(
     Object.entries(obj).filter(([_, v]) => v !== null),
