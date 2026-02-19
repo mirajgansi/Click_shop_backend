@@ -148,6 +148,7 @@ export class ProductService {
   }
 
   // ---------------- UPDATE (ADMIN) ----------------
+  // ---------------- UPDATE (ADMIN) ----------------
   async updateProduct(productId: string, data: UpdateProductDto) {
     const existing = await productRepository.getProductById(productId);
     if (!existing) throw new HttpError(404, "Product not found");
@@ -158,7 +159,16 @@ export class ProductService {
       if (nameCheck) throw new HttpError(409, "Product name already in use");
     }
 
-    const updated = await productRepository.updateProduct(productId, data);
+    // ✅ MAP existingImages -> images (gallery) and keep main image in sync
+    const update: any = { ...data };
+
+    if (Array.isArray(data.existingImages)) {
+      update.images = data.existingImages; // 👈 actual DB field
+      update.image = data.existingImages[0] ?? existing.image; // 👈 main image
+      delete update.existingImages; // optional cleanup
+    }
+
+    const updated = await productRepository.updateProduct(productId, update);
     return updated;
   }
 

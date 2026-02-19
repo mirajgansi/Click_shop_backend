@@ -17,6 +17,7 @@ router.put(
   authController.updateUser,
 );
 router.delete("/me", authorizedMiddleware, authController.deleteMe);
+router.post("/verify-reset-code", authController.verifyResetPasswordCode);
 
 router.post("/request-password-reset", authController.requestPasswordChange);
 router.get("/me/fcm-token", authorizedMiddleware, authController.getFcmToken);

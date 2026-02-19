@@ -186,6 +186,27 @@ export class UserService {
 
     return { message: "Password reset successful" };
   }
+
+  // ✅ verify reset code (for ResetCodePage)
+  async verifyResetPasswordCode(email: string, code: string) {
+    const user = await userRepository.getUserByEmail(email);
+    if (!user) throw new HttpError(404, "User not found");
+
+    if (!user.passwordResetCode || !user.passwordResetExpires) {
+      throw new HttpError(400, "No reset request found");
+    }
+
+    if (user.passwordResetExpires < new Date()) {
+      throw new HttpError(400, "Reset code expired");
+    }
+
+    const isValid = await bcrypt.compare(code, user.passwordResetCode);
+    if (!isValid) {
+      throw new HttpError(400, "Invalid reset code");
+    }
+
+    return { message: "Code verified" };
+  }
 }
 
 function stripNulls<T extends Record<string, any>>(obj: T) {

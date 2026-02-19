@@ -260,4 +260,29 @@ export class AuthController {
       });
     }
   }
+  // ✅ VERIFY RESET CODE
+  async verifyResetPasswordCode(req: Request, res: Response) {
+    try {
+      const { email, code } = req.body;
+
+      if (!email || !code) {
+        return res.status(400).json({
+          success: false,
+          message: "Email and code are required",
+        });
+      }
+
+      const result = await userService.verifyResetPasswordCode(email, code);
+
+      return res.status(200).json({
+        success: true,
+        message: result.message, // "Code verified"
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode ?? 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
+    }
+  }
 }

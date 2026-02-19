@@ -276,7 +276,10 @@ export class ProductController {
       // 4) handle multiple uploaded images (req.files)
       // depends on multer config: upload.array("image", 5)
       const files = (req as any).files as Express.Multer.File[] | undefined;
-
+      console.log("CONTENT-TYPE:", req.headers["content-type"]);
+      console.log("FILES:", (req as any).files?.length);
+      console.log("existingImages raw:", req.body.existingImages);
+      console.log("body keys:", Object.keys(req.body));
       if (files?.length) {
         const newImages = files.map((f) => `/uploads/${f.filename}`);
 
