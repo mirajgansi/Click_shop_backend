@@ -4,7 +4,9 @@ import {
   MarkAsReadDTO,
 } from "../dtos/notificatoin.dto";
 import { NotificationRepository } from "../repositories/notification.repository";
-import { getIO } from "../config/socket"; // adjust path
+import { getIO, isUserOnline } from "../config/socket"; // adjust path
+import { UserRepository } from "../repositories/user.repository";
+import { sendPushNotification } from "../utils/sendNotification";
 
 export class NotificationService {
   constructor(private repo = new NotificationRepository()) {}
@@ -20,9 +22,23 @@ export class NotificationService {
   async notify(data: CreateNotificationDTO) {
     const saved = await this.repo.create(data);
 
-    // realtime emit to room = userId
+    const userId = saved.to.toString();
+
+    // ✅ realtime emit
     const io = getIO();
-    io.to(saved.to.toString()).emit("notification", saved);
+    io.to(userId).emit("notification", saved);
+
+    // ✅ send FCM only if user offline
+    const userRepo = new UserRepository();
+    const user = await userRepo.getUserById(userId); // must return fcmToken
+    const token = user?.fcmToken;
+
+    if (!isUserOnline(userId) && token) {
+      await sendPushNotification(token, saved.title, saved.message, {
+        type: saved.type ?? "notification",
+        notificationId: saved._id.toString(),
+      });
+    }
 
     return saved;
   }

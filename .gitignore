@@ -83,7 +83,6 @@ dist
 !.yarn/versions
 
 # Firebase / Google service account
-src/config/serviceAccountKey.json
-
-# Or ignore any service account json
-*serviceAccount*.json
+# src/config/serviceAccountKey.json
+serviceAccount*.json
+**/serviceAccount*.json
