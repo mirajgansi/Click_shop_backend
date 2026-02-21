@@ -32,21 +32,28 @@ export class CartRepository {
   async updateQuantity(userId: string, productId: string, qty: number) {
     const cart = await this.getOrCreateCart(userId);
 
-    const item = cart.items.find((i) => i.productId.toString() === productId);
-    if (!item) return null;
+    const findIndex = cart.items.findIndex((i: any) => {
+      const pid = i.productId;
+
+      // populated doc -> pid._id
+      if (pid && typeof pid === "object" && pid._id) {
+        return String(pid._id) === String(productId);
+      }
+
+      // ObjectId or string
+      return String(pid) === String(productId);
+    });
+
+    if (findIndex === -1) return null;
 
     if (qty <= 0) {
-      const index = cart.items.findIndex(
-        (i) => i.productId.toString() === productId,
-      );
-      if (index > -1) cart.items.splice(index, 1);
+      cart.items.splice(findIndex, 1);
     } else {
-      item.quantity = qty;
+      cart.items[findIndex].quantity = qty;
     }
 
     return cart.save();
   }
-
   async removeItem(userId: string, productId: string) {
     const cart = await this.getOrCreateCart(userId);
     const index = cart.items.findIndex(

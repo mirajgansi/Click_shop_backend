@@ -86,3 +86,4 @@ dist
 # src/config/serviceAccountKey.json
 serviceAccount*.json
 **/serviceAccount*.json
+src/config/serviceAccountKey.json

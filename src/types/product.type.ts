@@ -17,14 +17,8 @@ export const ProductSchema = z.object({
   inStock: z.coerce.number().int("Stock must be an integer").min(0).default(0),
   manufacturer: z.string().min(1, "Manufacturer is required"),
 
-  manufactureDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: "Invalid manufacture date",
-  }),
-
-  expireDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: "Invalid expire date",
-  }),
-
+  manufactureDate: z.string().datetime().optional().nullable(),
+  expireDate: z.string().datetime().optional().nullable(),
   nutritionalInfo: z.string().min(1, "Nutritional info is required"),
 
   category: z.enum(CATEGORIES, {
