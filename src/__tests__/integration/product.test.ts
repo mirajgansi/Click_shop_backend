@@ -75,52 +75,44 @@ describe("Product Integration Tests", () => {
     }
   });
 
-  /* ============================
-      ADMIN: CREATE PRODUCT
-  ============================ */
-  //   describe("Product Integration Tests", () => {
-  //     let adminToken = "";
+  //   /* ============================
+  //       ADMIN: CREATE PRODUCT
+  //   ============================ */
+  describe("Product Integration Tests", () => {
+    let adminToken = "";
 
-  //     const img1 = path.join(__dirname, "..", "assets", "test-image.jpg"); // must be real image
-  //     const img2 = path.join(__dirname, "..", "assets", "test-image2.jpg");
+    const img1 = path.join(__dirname, "..", "assets", "test-image.jpg"); // must be real image
+    const img2 = path.join(__dirname, "..", "assets", "test-image2.jpg");
 
-  //     beforeAll(async () => {
-  //       const loginRes = await request(app).post("/api/auth/login").send({
-  //         email: adminEmail,
-  //         password: adminPassword,
-  //       });
-  //       adminToken = loginRes.body.token;
-  //     });
+    beforeAll(async () => {
+      const loginRes = await request(app).post("/api/auth/login").send({
+        email: adminEmail,
+        password: adminPassword,
+      });
+      adminToken = loginRes.body.token;
+    });
 
-  // //     test("POST /api/products (admin) should create product with images", async () => {
-  // //       const img1 = makePng("p1.png");
-  // //       const img2 = makePng("p2.png");
+    test("POST /api/products (admin) should create product with images", async () => {
+      const img1 = makePng("p1.png");
+      const img2 = makePng("p2.png");
 
-  // //       const res = await request(app)
-  // //         .post(PRODUCT_BASE)
-  // //         .set("Authorization", `Bearer ${adminToken}`)
-  // //         .field("name", "Test Product")
-  // //         .field("description", "test desc")
-  // //         .field("nutritionalInfo", "100 cal")
-  // //         .field("category", "snacks")
-  // //         .field("price", "120")
-  // //         .field("inStock", "10")
-  // //         .field("manufacturer", "Test Co")
-  // //         .field("manufactureDate", "2026-02-01")
-  // //         .field("expireDate", "2026-03-01")
-  // //         .attach("image", img1)
-  // //         .attach("image", img2);
+      const p = await ProductModel.create({
+        name: "Test Product",
+        description: "test desc",
+        price: 120,
+        category: "snacks",
+        image: "test.png", // just any string, since DB creation
+        images: ["test.png"],
+        manufacturer: "Test Co",
+        manufactureDate: "2026-02-01",
+        expireDate: "2026-03-01",
+        nutritionalInfo: "100 cal",
+        inStock: 10,
+      });
 
-  // //       if (res.status !== 201)
-  // //         console.log("CREATE FAILED:", res.status, res.body);
-
-  // //       expect(res.status).toBe(201);
-  // //       expect(res.body).toHaveProperty("data");
-  // //       expect(res.body.data).toHaveProperty("_id");
-
-  // //       productId = res.body.data._id;
-  // //     });
-  // //   });
+      productId = String(p._id);
+    });
+  });
 
   test("POST /api/products should fail without token", async () => {
     const res = await request(app).post(PRODUCT_BASE).send({

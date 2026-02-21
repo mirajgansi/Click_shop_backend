@@ -23,7 +23,9 @@ describe("Admin Users Integration Tests", () => {
       email: { $in: [adminEmail, "u-create@test.com", "u-update@test.com"] },
     });
     await UserModel.deleteMany({
-      username: { $in: [adminUsername, "user-created", "user-updated"] },
+      username: {
+        $in: [adminUsername, "user-created", "user-updated", "normal-user"],
+      },
     });
 
     // Create an admin user directly in DB (fastest & reliable for admin tests)
@@ -90,7 +92,6 @@ describe("Admin Users Integration Tests", () => {
     expect([401, 403]).toContain(res.status);
     expect(res.body).toHaveProperty("message");
   });
-
   test("POST / (admin) should create a user (no image)", async () => {
     const res = await request(app)
       .post(ADMIN_BASE)

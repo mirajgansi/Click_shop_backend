@@ -4,10 +4,11 @@ import {
   adminMiddleware,
   driverMiddleware,
 } from "../middleware/authorized.middleware";
+import { authorizedMiddleware } from "../middleware/authorized.middleware";
 
 const router = Router();
 const controller = new DriverController();
-
+router.use(authorizedMiddleware);
 // driver updates availability
 router.patch(
   "/:id/status",
