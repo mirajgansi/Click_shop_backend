@@ -3,6 +3,7 @@ import {
   CreateUserDTO,
   LoginUserDTO,
   SaveFcmTokenDTO,
+  UpdateProfileDTO,
   UpdateUserDTO,
 } from "../dtos/user.dto";
 import { Request, Response } from "express";
@@ -148,7 +149,7 @@ export class AuthController {
           .status(400)
           .json({ success: false, message: "User ID not provided" });
       }
-      const parsedData = UpdateUserDTO.safeParse(req.body);
+      const parsedData = UpdateProfileDTO.safeParse(req.body);
       if (!parsedData.success) {
         return res
           .status(400)

@@ -11,7 +11,7 @@ declare global {
       user?: Record<string, any> | IUser;
     }
   }
-} // adding tag (user) to request, can use req.user
+}
 let userRepository = new UserRepository();
 
 export const authorizedMiddleware = async (
@@ -23,25 +23,20 @@ export const authorizedMiddleware = async (
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer "))
       throw new HttpError(401, "Unauthorized JWT invalid");
-    // JWT token should start with "Bearer <token>"
-    const token = authHeader.split(" ")[1]; // 0 -> Bearer, 1 -> token
+    const token = authHeader.split(" ")[1];
     const decodedToken = jwt.verify(token, JWT_SECRET) as Record<string, any>;
     if (!decodedToken || !decodedToken.id) {
       throw new HttpError(401, "Unauthorized JWT unverified");
-    } // make function async
+    }
     const user = await userRepository.getUserById(decodedToken.id);
     if (!user) throw new HttpError(401, "Unauthorized user not found");
-    req.user = user; // attach user to request (like tag)
+    req.user = user;
     next();
   } catch (err: Error | any) {
     return res
       .status(err.statusCode || 500)
       .json({ success: false, message: err.message });
   }
-  // if(req.headers && req.headers.authorization){
-  //     return next();
-  // }
-  // return res.status(401).json({ success: false, message: 'Unauthorized' });
 };
 
 export const adminMiddleware = async (
@@ -50,8 +45,6 @@ export const adminMiddleware = async (
   next: NextFunction,
 ) => {
   try {
-    // req.user is added by authorizedMiddleware
-    // any function after authorizedMiddleware can use req.user
     if (!req.user) {
       throw new HttpError(401, "Unauthorized no user info");
     }
@@ -72,8 +65,6 @@ export const driverMiddleware = async (
   next: NextFunction,
 ) => {
   try {
-    // req.user is added by authorizedMiddleware
-    // any function after authorizedMiddleware can use req.user
     if (!req.user) {
       throw new HttpError(401, "Unauthorized no user info");
     }
