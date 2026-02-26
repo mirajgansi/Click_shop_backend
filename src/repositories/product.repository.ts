@@ -1,4 +1,5 @@
 import { ProductModel, ProductDoc } from "../models/product.model";
+import { UserModel } from "../models/user.model";
 import type { ProductType } from "../types/product.type";
 
 type ProductQueryArgs = {
@@ -74,14 +75,14 @@ export class ProductRepository implements IProductRepository {
   }
 
   async getProductById(id: string): Promise<ProductDoc | null> {
-    return await ProductModel.findById(id);
+    return await ProductModel.findById(id)
+      .populate("comments.userId", "username")
+      .populate("ratings.userId", "username");
   }
-
   async updateProduct(
     id: string,
     updateData: Partial<ProductType>,
   ): Promise<ProductDoc | null> {
-    // ✅ block editing user-generated fields from admin update
     const {
       ratings,
       favorites,
@@ -91,7 +92,9 @@ export class ProductRepository implements IProductRepository {
       ...safeUpdate
     } = updateData as any;
 
-    return await ProductModel.findByIdAndUpdate(id, safeUpdate, { new: true });
+    return await ProductModel.findByIdAndUpdate(id, safeUpdate, {
+      new: true,
+    }).populate("comments.userId", "username");
   }
 
   async deleteProduct(id: string): Promise<boolean> {
@@ -181,10 +184,6 @@ export class ProductRepository implements IProductRepository {
     return { products, total };
   }
 
-  // ==========================
-  // ✅ NEW: Rating / Favorite / Comment
-  // ==========================
-
   async rateProduct({
     productId,
     userId,
@@ -258,14 +257,18 @@ export class ProductRepository implements IProductRepository {
     if (!product) return null;
 
     product.comments = product.comments || [];
+
     product.comments.push({
       userId,
       comment,
-      createdAt: new Date().toISOString(),
     } as any);
 
     await product.save();
-    return product;
+
+    // return populated version
+    return await ProductModel.findById(productId)
+      .populate("comments.userId", "username")
+      .populate("ratings.userId", "username");
   }
   async getUserFavorites(userId: string) {
     return ProductModel.find({
@@ -273,7 +276,9 @@ export class ProductRepository implements IProductRepository {
     }).sort({ createdAt: -1 });
   }
   async getProductComments(productId: string) {
-    const product = await ProductModel.findById(productId).select("comments");
-    return product ? product.comments : null;
+    const product = await ProductModel.findById(productId)
+      .select("comments")
+      .populate("comments.userId", "username");
+    return product?.comments;
   }
 }

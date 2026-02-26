@@ -13,9 +13,9 @@ const RatingSchema = z.object({
   rating: z.number().min(1).max(5),
 });
 
-// 💬 Comment Schema
 const CommentSchema = z.object({
   userId: z.string(),
+  username: z.string(),
   comment: z.string().min(1, "Comment cannot be empty"),
   createdAt: z.string().datetime().optional(),
 });

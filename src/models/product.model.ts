@@ -75,7 +75,6 @@ const ProductSchema = new Schema<ProductType>(
       },
     ],
 
-    // 💬 Comments
     comments: {
       type: [CommentSchema],
       default: [],

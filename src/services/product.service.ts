@@ -40,7 +40,24 @@ export class ProductService {
   async getProductById(productId: string) {
     const product = await productRepository.getProductById(productId);
     if (!product) throw new HttpError(404, "Product not found");
-    return product;
+
+    const p: any = product.toObject();
+
+    p.comments = (p.comments ?? []).map((c: any) => ({
+      _id: c._id,
+      userId: c.userId?._id?.toString?.() ?? c.userId?.toString?.() ?? "",
+      username: c.userId?.username ?? "",
+      comment: c.comment,
+      createdAt: c.createdAt,
+    }));
+
+    p.ratings = (p.ratings ?? []).map((r: any) => ({
+      userId: r.userId?._id?.toString?.() ?? r.userId?.toString?.() ?? "",
+      username: r.userId?.username ?? "",
+      rating: r.rating,
+    }));
+    if (!p) throw new HttpError(404, "Product not found");
+    return p;
   }
 
   async getAllProducts({
@@ -217,10 +234,6 @@ export class ProductService {
     return { products: outOnly, pagination };
   }
 
-  // ======================================================
-  // ✅ NEW: USER FEATURES (rating / favorite / comments)
-  // ======================================================
-
   async rateProduct(productId: string, userId: string, rating: number) {
     if (!rating || rating < 1 || rating > 5) {
       throw new HttpError(400, "Rating must be between 1 and 5");
@@ -267,14 +280,15 @@ export class ProductService {
     return productRepository.getUserFavorites(userId);
   }
   async getProductComments(productId: string) {
-    const product = await productRepository.getProductById(productId);
-    if (!product) throw new HttpError(404, "Product not found");
+    const comments = await productRepository.getProductComments(productId);
+    if (!comments) throw new HttpError(404, "Product not found");
 
-    const comments = [...(product.comments ?? [])].sort(
-      (a: any, b: any) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
-
-    return comments;
+    return (comments ?? []).map((c: any) => ({
+      _id: c._id,
+      userId: c.userId?._id?.toString?.() ?? c.userId?.toString?.(),
+      username: c.userId?.username,
+      comment: c.comment,
+      createdAt: c.createdAt,
+    }));
   }
 }
