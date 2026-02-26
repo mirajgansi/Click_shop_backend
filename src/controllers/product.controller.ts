@@ -5,15 +5,12 @@ import {
   CreateProductDto,
   RestockProductDto,
   UpdateProductDto,
+  RateProductDto,
+  AddCommentDto,
 } from "../dtos/product.dto";
 import mongoose from "mongoose";
 
 const productService = new ProductService();
-interface QueryParams {
-  page?: string;
-  size?: string;
-  search?: string;
-}
 
 interface QueryParams {
   page?: string;
@@ -21,6 +18,7 @@ interface QueryParams {
   search?: string;
   category?: string;
 }
+
 export class ProductController {
   // ---------------- CREATE (ADMIN ONLY) ----------------
   async createProduct(req: Request, res: Response) {
@@ -41,7 +39,6 @@ export class ProductController {
       }
 
       const files = req.files as Express.Multer.File[] | undefined;
-
       if (!files || files.length === 0) {
         return res
           .status(400)
@@ -50,9 +47,6 @@ export class ProductController {
 
       parsedData.data.image = `/uploads/${files[0].filename}`;
       parsedData.data.images = files.map((f) => `/uploads/${f.filename}`);
-
-      // optional gallery:
-      // parsedData.data.images = files.map((f) => `/uploads/${f.filename}`);
 
       const product = await productService.createProduct(
         parsedData.data,
@@ -73,16 +67,14 @@ export class ProductController {
   }
 
   // ---------------- READ ----------------
-
   async getProductById(req: Request, res: Response) {
     try {
       const productId = req.params.id;
 
       if (!mongoose.Types.ObjectId.isValid(productId)) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid product id",
-        });
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid product id" });
       }
 
       const product = await productService.getProductById(productId);
@@ -102,12 +94,15 @@ export class ProductController {
 
   async getAllProducts(req: Request, res: Response) {
     try {
-      const { page, size, search }: QueryParams = req.query;
+      const { page, size, search, category }: QueryParams = req.query;
+
       const products = await productService.getAllProducts({
         page,
         size,
         search,
+        category,
       });
+
       return res.status(200).json({
         success: true,
         message: "Products fetched successfully",
@@ -248,6 +243,7 @@ export class ProductController {
     }
   }
 
+  // ---------------- UPDATE (ADMIN) ----------------
   async updateProduct(req: Request, res: Response) {
     try {
       const productId = req.params.id;
@@ -265,33 +261,24 @@ export class ProductController {
         }
       }
 
-      // 3) parse with zod
       const parsedData = UpdateProductDto.safeParse(body);
       if (!parsedData.success) {
-        return res
-          .status(400)
-          .json({ success: false, message: z.prettifyError(parsedData.error) });
+        return res.status(400).json({
+          success: false,
+          message: z.prettifyError(parsedData.error),
+        });
       }
 
-      // 4) handle multiple uploaded images (req.files)
-      // depends on multer config: upload.array("image", 5)
       const files = (req as any).files as Express.Multer.File[] | undefined;
-      console.log("CONTENT-TYPE:", req.headers["content-type"]);
-      console.log("FILES:", (req as any).files?.length);
-      console.log("existingImages raw:", req.body.existingImages);
-      console.log("body keys:", Object.keys(req.body));
+
       if (files?.length) {
         const newImages = files.map((f) => `/uploads/${f.filename}`);
-
-        // if your DB uses `images` array:
         parsedData.data.existingImages = [
           ...(Array.isArray(parsedData.data.existingImages)
             ? parsedData.data.existingImages
             : []),
           ...newImages,
         ];
-
-        // optional: also set `image` as first image
       }
 
       const updated = await productService.updateProduct(
@@ -331,6 +318,7 @@ export class ProductController {
     }
   }
 
+  // ---------------- RESTOCK (ADMIN) ----------------
   async restockProduct(req: Request, res: Response) {
     try {
       const adminId = req.user?._id;
@@ -373,7 +361,7 @@ export class ProductController {
     }
   }
 
-  // ---------------- OUT OF STOCK (ADMIN/ANY) ----------------
+  // ---------------- OUT OF STOCK ----------------
   async getOutOfStockProducts(req: Request, res: Response) {
     try {
       const { page, size, search, category }: QueryParams = req.query;
@@ -399,8 +387,184 @@ export class ProductController {
   }
 
   // ---------------- VIEW COUNT (PUBLIC) ----------------
-  // call this when product detail page opens
   async incrementViewCount(req: Request, res: Response) {
+    try {
+      const productId = req.params.id;
+
+      if (!mongoose.Types.ObjectId.isValid(productId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid product id" });
+      }
+
+      const updated = await productService.incrementViewCount(productId);
+
+      return res.status(200).json({
+        success: true,
+        message: "View count incremented",
+        data: updated,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode ?? 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
+    }
+  }
+
+  // ======================================================
+  // ✅ NEW: RATING / FAVORITE / COMMENT (USER)
+  // ======================================================
+
+  // ⭐ Rate product (body: { rating: 1..5 })
+  async rateProduct(req: Request, res: Response) {
+    try {
+      const userId = req.user?._id;
+      if (!userId) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+      }
+
+      const productId = req.params.id;
+      if (!mongoose.Types.ObjectId.isValid(productId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid product id" });
+      }
+
+      const parsed = RateProductDto.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          message: z.prettifyError(parsed.error),
+        });
+      }
+
+      const updated = await productService.rateProduct(
+        productId,
+        userId.toString(),
+        parsed.data.rating,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Product rated successfully",
+        data: updated,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode ?? 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
+    }
+  }
+
+  // ❤️ Toggle favorite (no body needed)
+  async toggleFavorite(req: Request, res: Response) {
+    try {
+      const userId = req.user?._id;
+      if (!userId) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+      }
+
+      const productId = req.params.id;
+      if (!mongoose.Types.ObjectId.isValid(productId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid product id" });
+      }
+
+      const updated = await productService.toggleFavorite(
+        productId,
+        userId.toString(),
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Favorite updated successfully",
+        data: updated,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode ?? 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
+    }
+  }
+
+  // 💬 Add comment (body: { comment: "..." })
+  async addComment(req: Request, res: Response) {
+    try {
+      const userId = req.user?._id;
+      if (!userId) {
+        return res
+          .status(401)
+          .json({ success: false, message: "Unauthorized" });
+      }
+
+      const productId = req.params.id;
+      if (!mongoose.Types.ObjectId.isValid(productId)) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid product id" });
+      }
+
+      const parsed = AddCommentDto.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          message: z.prettifyError(parsed.error),
+        });
+      }
+
+      const updated = await productService.addComment(
+        productId,
+        userId.toString(),
+        parsed.data.comment,
+      );
+
+      return res.status(201).json({
+        success: true,
+        message: "Comment added successfully",
+        data: updated,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode ?? 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
+    }
+  }
+  // ---------------- USER FAVORITES ----------------
+  async getUserFavorites(req: Request, res: Response) {
+    try {
+      const userId = req.user?._id;
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          message: "Unauthorized",
+        });
+      }
+
+      const products = await productService.getUserFavorites(userId.toString());
+
+      return res.status(200).json({
+        success: true,
+        message: "Favorite products fetched successfully",
+        data: products,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode ?? 500).json({
+        success: false,
+        message: error.message || "Internal Server Error",
+      });
+    }
+  }
+  // ---------------- GET COMMENTS (PUBLIC) ----------------
+  async getProductComments(req: Request, res: Response) {
     try {
       const productId = req.params.id;
 
@@ -411,12 +575,12 @@ export class ProductController {
         });
       }
 
-      const updated = await productService.incrementViewCount(productId);
+      const comments = await productService.getProductComments(productId);
 
       return res.status(200).json({
         success: true,
-        message: "View count incremented",
-        data: updated,
+        message: "Comments fetched successfully",
+        data: comments,
       });
     } catch (error: any) {
       return res.status(error.statusCode ?? 500).json({

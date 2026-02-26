@@ -1,13 +1,10 @@
 import { HttpError } from "../errors/http-error";
 import { ProductRepository } from "../repositories/product.repository";
-// import { UserRepository } from "../repositories/user.repository"; // only if you want to validate admin exists
 import { CreateProductDto, UpdateProductDto } from "../dtos/product.dto";
-import { ProductModel } from "../models/product.model";
 import { UserModel } from "../models/user.model";
 import { NotificationService } from "./notification.service";
 
 const productRepository = new ProductRepository();
-// const userRepository = new UserRepository(); // optional
 const notificationService = new NotificationService();
 
 export class ProductService {
@@ -62,8 +59,8 @@ export class ProductService {
       size === "all" ? Number.MAX_SAFE_INTEGER : size ? parseInt(size) : 10;
 
     const currentSearch = (search ?? "").trim();
-
     const currentCategory = (category ?? "").trim();
+
     const normalizedCategory =
       !currentCategory || currentCategory === "All" ? "" : currentCategory;
 
@@ -86,68 +83,30 @@ export class ProductService {
 
   async getProductsByCategory(category: string) {
     const clean = category?.trim();
-    if (!clean) {
-      throw new HttpError(400, "Category is required");
-    }
-
+    if (!clean) throw new HttpError(400, "Category is required");
     return productRepository.getProductsByCategory(clean);
   }
+
   // recently added
   async getRecentlyAdded(page: number = 1, size: number = 10) {
-    const skip = (page - 1) * size;
-    const filter = { inStock: { $gt: 0 } };
-
-    const [products, total] = await Promise.all([
-      ProductModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(size),
-      ProductModel.countDocuments(filter),
-    ]);
-
-    return { products, total };
+    return productRepository.getRecentlyAdded({ page, size });
   }
 
   // trending = highest selling
   async getTrending(page: number = 1, size: number = 10) {
-    const skip = (page - 1) * size;
-    const filter = { inStock: { $gt: 0 } };
-
-    const [products, total] = await Promise.all([
-      ProductModel.find(filter).sort({ totalSold: -1 }).skip(skip).limit(size),
-      ProductModel.countDocuments(filter),
-    ]);
-
-    return { products, total };
+    return productRepository.getTrending({ page, size });
   }
 
   // popular = most viewed
   async getMostPopular(page: number = 1, size: number = 10) {
-    const skip = (page - 1) * size;
-    const filter = { inStock: { $gt: 0 } };
-
-    const [products, total] = await Promise.all([
-      ProductModel.find(filter).sort({ viewCount: -1 }).skip(skip).limit(size),
-      ProductModel.countDocuments(filter),
-    ]);
-
-    return { products, total };
+    return productRepository.getMostPopular({ page, size });
   }
 
   // top rated
   async getTopRated(page: number = 1, size: number = 10) {
-    const skip = (page - 1) * size;
-    const filter = { inStock: { $gt: 0 } };
-
-    const [products, total] = await Promise.all([
-      ProductModel.find(filter)
-        .sort({ averageRating: -1, reviewCount: -1 })
-        .skip(skip)
-        .limit(size),
-      ProductModel.countDocuments(filter),
-    ]);
-
-    return { products, total };
+    return productRepository.getTopRated({ page, size });
   }
 
-  // ---------------- UPDATE (ADMIN) ----------------
   // ---------------- UPDATE (ADMIN) ----------------
   async updateProduct(productId: string, data: UpdateProductDto) {
     const existing = await productRepository.getProductById(productId);
@@ -161,6 +120,7 @@ export class ProductService {
 
     const update: any = { ...data };
 
+    // handle existingImages swap
     if (Array.isArray(data.existingImages)) {
       update.images = data.existingImages;
       update.image = data.existingImages[0] ?? existing.image;
@@ -168,6 +128,7 @@ export class ProductService {
     }
 
     const updated = await productRepository.updateProduct(productId, update);
+    if (!updated) throw new HttpError(404, "Product not found");
     return updated;
   }
 
@@ -178,9 +139,8 @@ export class ProductService {
     return { success: true };
   }
 
-  // ---------------- OPTIONAL: analytics helpers ----------------
+  // ---------------- analytics helpers ----------------
   async incrementViewCount(productId: string) {
-    // Better if repository supports $inc.
     const product = await productRepository.getProductById(productId);
     if (!product) throw new HttpError(404, "Product not found");
 
@@ -188,6 +148,7 @@ export class ProductService {
       viewCount: (product.viewCount ?? 0) + 1,
     } as any);
 
+    if (!updated) throw new HttpError(404, "Product not found");
     return updated;
   }
 
@@ -209,8 +170,9 @@ export class ProductService {
 
     const updated = await productRepository.updateProduct(productId, {
       inStock: nextStock,
-    } as UpdateProductDto);
+    } as any);
 
+    if (!updated) throw new HttpError(404, "Product not found");
     return updated;
   }
 
@@ -235,33 +197,84 @@ export class ProductService {
     const normalizedCategory =
       !currentCategory || currentCategory === "All" ? "" : currentCategory;
 
-    const filter: any = { inStock: { $lte: 0 } };
+    // ✅ easiest: reuse getAllProducts logic but with out-of-stock filter
+    // If you want cleaner, create repository method getOutOfStock(...)
+    const { products, total } = await productRepository.getAllProducts({
+      page: currentPage,
+      size: pageSize,
+      search: currentSearch,
+      category: normalizedCategory,
+    });
 
-    if (currentSearch) {
-      filter.$or = [
-        { name: { $regex: currentSearch, $options: "i" } },
-        // add more fields if you want:
-        // { brand: { $regex: currentSearch, $options: "i" } },
-      ];
-    }
-
-    if (normalizedCategory) filter.category = normalizedCategory;
-
-    const [products, total] = await Promise.all([
-      ProductModel.find(filter)
-        .sort({ updatedAt: -1, createdAt: -1 })
-        .skip((currentPage - 1) * pageSize)
-        .limit(pageSize),
-      ProductModel.countDocuments(filter),
-    ]);
-
+    const outOnly = products.filter((p: any) => (p.inStock ?? 0) <= 0);
     const pagination = {
       page: currentPage,
       size: pageSize,
-      total,
+      total, // (optional) if you want correct total for out-of-stock, create repo method
       totalPages: Math.ceil(total / pageSize),
     };
 
-    return { products, pagination };
+    return { products: outOnly, pagination };
+  }
+
+  // ======================================================
+  // ✅ NEW: USER FEATURES (rating / favorite / comments)
+  // ======================================================
+
+  async rateProduct(productId: string, userId: string, rating: number) {
+    if (!rating || rating < 1 || rating > 5) {
+      throw new HttpError(400, "Rating must be between 1 and 5");
+    }
+
+    const updated = await productRepository.rateProduct({
+      productId,
+      userId,
+      rating,
+    });
+
+    if (!updated) throw new HttpError(404, "Product not found");
+    return updated;
+  }
+
+  async toggleFavorite(productId: string, userId: string) {
+    const updated = await productRepository.toggleFavorite({
+      productId,
+      userId,
+    });
+
+    if (!updated) throw new HttpError(404, "Product not found");
+    return updated;
+  }
+
+  async addComment(productId: string, userId: string, comment: string) {
+    const clean = (comment ?? "").trim();
+    if (!clean) throw new HttpError(400, "Comment is required");
+
+    const updated = await productRepository.addComment({
+      productId,
+      userId,
+      comment: clean,
+    });
+
+    if (!updated) throw new HttpError(404, "Product not found");
+    return updated;
+  }
+  async getUserFavorites(userId: string) {
+    if (!userId) {
+      throw new HttpError(401, "Unauthorized");
+    }
+
+    return productRepository.getUserFavorites(userId);
+  }
+  async getProductComments(productId: string) {
+    const product = await productRepository.getProductById(productId);
+    if (!product) throw new HttpError(404, "Product not found");
+
+    const comments = [...(product.comments ?? [])].sort(
+      (a: any, b: any) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
+    return comments;
   }
 }

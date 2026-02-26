@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ProductSchema } from "../types/product.type";
+
 export const CreateProductDto = ProductSchema.pick({
   name: true,
   description: true,
@@ -10,15 +11,18 @@ export const CreateProductDto = ProductSchema.pick({
   nutritionalInfo: true,
   category: true,
   inStock: true,
-  viewCount: true,
 }).extend({
   existingImages: z.union([z.string(), z.array(z.string())]).optional(),
   image: z.string().optional(),
   images: z.array(z.string()).optional(),
+
   price: z.coerce.number().positive(),
   inStock: z.coerce.number().int().min(0).default(0),
+
   sku: z.string().optional(),
 });
+
+export type CreateProductDto = z.infer<typeof CreateProductDto>;
 
 export const UpdateProductDto = ProductSchema.pick({
   name: true,
@@ -30,7 +34,6 @@ export const UpdateProductDto = ProductSchema.pick({
   nutritionalInfo: true,
   category: true,
   inStock: true,
-  viewCount: true,
 })
   .partial()
   .extend({
@@ -45,6 +48,8 @@ export const UpdateProductDto = ProductSchema.pick({
     nutritionalInfo: z.string().optional().or(z.literal("")),
     sku: z.string().optional().or(z.literal("")),
   });
+
+export type UpdateProductDto = z.infer<typeof UpdateProductDto>;
 
 export const RestockProductDto = z.object({
   quantity: z.coerce.number().int().min(0),
@@ -61,5 +66,21 @@ export const OutOfStockQueryDto = z.object({
 });
 
 export type OutOfStockQueryDto = z.infer<typeof OutOfStockQueryDto>;
-export type CreateProductDto = z.infer<typeof CreateProductDto>;
-export type UpdateProductDto = z.infer<typeof UpdateProductDto>;
+
+export const RateProductDto = z.object({
+  rating: z.coerce.number().min(1).max(5),
+});
+
+export type RateProductDto = z.infer<typeof RateProductDto>;
+
+export const ToggleFavoriteDto = z.object({
+  productId: z.string().optional(),
+});
+
+export type ToggleFavoriteDto = z.infer<typeof ToggleFavoriteDto>;
+
+export const AddCommentDto = z.object({
+  comment: z.string().min(1, "Comment cannot be empty"),
+});
+
+export type AddCommentDto = z.infer<typeof AddCommentDto>;

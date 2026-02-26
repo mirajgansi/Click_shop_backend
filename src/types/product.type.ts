@@ -8,6 +8,18 @@ export const CATEGORIES = [
   "beverages",
 ] as const;
 
+const RatingSchema = z.object({
+  userId: z.string(),
+  rating: z.number().min(1).max(5),
+});
+
+// 💬 Comment Schema
+const CommentSchema = z.object({
+  userId: z.string(),
+  comment: z.string().min(1, "Comment cannot be empty"),
+  createdAt: z.string().datetime().optional(),
+});
+
 export const ProductSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
 
@@ -27,26 +39,19 @@ export const ProductSchema = z.object({
   image: z.string().min(1, "Image is required").optional(),
   images: z.array(z.string()).optional(),
 
-  // available: z.boolean().default(true),
+  ratings: z.array(RatingSchema).default([]),
+  averageRating: z.number().min(0).max(5).default(0),
+  reviewCount: z.number().int().min(0).default(0),
 
-  // inStock: z
-  //   .number()
-  //   .int("Stock must be an integer")
-  //   .min(0, "Stock cannot be negative")
-  //   .default(0),
+  favorites: z.array(z.string()).default([]),
+
+  comments: z.array(CommentSchema).default([]),
 
   totalSold: z.number().int().min(0).default(0),
 
   totalRevenue: z.number().min(0).default(0),
 
   viewCount: z.number().int().min(0).default(0),
-
-  averageRating: z
-    .number()
-    .min(0, "Rating cannot be less than 0")
-    .max(5, "Rating cannot be more than 5")
-    .default(0),
-  reviewCount: z.number().int().min(0).default(0),
 });
 
 export type ProductType = z.infer<typeof ProductSchema>;

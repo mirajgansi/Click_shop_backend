@@ -38,11 +38,29 @@ router.delete(
   adminMiddleware,
   productController.deleteProduct.bind(productController),
 );
+router.post(
+  "/:id/rate",
+  authorizedMiddleware,
+  productController.rateProduct.bind(productController),
+);
 
-/* =======================
-   PUBLIC
-======================= */
+router.post(
+  "/:id/favorite",
+  authorizedMiddleware,
+  productController.toggleFavorite.bind(productController),
+);
 
+router.post(
+  "/:id/comment",
+  authorizedMiddleware,
+  productController.addComment.bind(productController),
+);
+
+router.get(
+  "/favorites/me",
+  authorizedMiddleware,
+  productController.getUserFavorites.bind(productController),
+);
 //  Get all
 router.get("/", productController.getAllProducts.bind(productController));
 
@@ -72,6 +90,10 @@ router.get(
 router.patch(
   "/:id/view",
   productController.incrementViewCount.bind(productController),
+);
+router.get(
+  "/:id/comments",
+  productController.getProductComments.bind(productController),
 );
 
 router.get("/:id", productController.getProductById.bind(productController));
