@@ -37,12 +37,14 @@ export class ProductService {
   }
 
   // ---------------- READ ----------------
-  async getProductById(productId: string) {
+  async getProductById(productId: string, userId?: string) {
     const product = await productRepository.getProductById(productId);
     if (!product) throw new HttpError(404, "Product not found");
 
     const p: any = product.toObject();
-
+    p.isFavorite = userId
+      ? (p.favorites ?? []).some((id: any) => String(id) === String(userId))
+      : false;
     p.comments = (p.comments ?? []).map((c: any) => ({
       _id: c._id,
       userId: c.userId?._id?.toString?.() ?? c.userId?.toString?.() ?? "",
@@ -59,7 +61,6 @@ export class ProductService {
     if (!p) throw new HttpError(404, "Product not found");
     return p;
   }
-
   async getAllProducts({
     page,
     size,

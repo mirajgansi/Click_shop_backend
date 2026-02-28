@@ -71,13 +71,9 @@ export class ProductController {
     try {
       const productId = req.params.id;
 
-      if (!mongoose.Types.ObjectId.isValid(productId)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid product id" });
-      }
+      const userId = req.user?._id?.toString(); // may be undefined
 
-      const product = await productService.getProductById(productId);
+      const product = await productService.getProductById(productId, userId);
 
       return res.status(200).json({
         success: true,
