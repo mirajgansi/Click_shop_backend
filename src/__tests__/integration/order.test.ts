@@ -1,7 +1,6 @@
 import request from "supertest";
 import mongoose from "mongoose";
 
-// ✅ Mock notifications so tests don't send anything
 jest.mock("../../services/notification.service", () => {
   return {
     NotificationService: jest.fn().mockImplementation(() => ({
