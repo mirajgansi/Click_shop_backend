@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { AdminAnalyticsService } from "../../services/admin/aalytics.service";
+import { AdminAnalyticsService } from "../../services/admin/analytics.service";
 
 function parseRange(req: Request) {
   const from = req.query.from

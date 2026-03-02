@@ -1,5 +1,5 @@
 import { PipelineStage } from "mongoose";
-import { AdminAnalyticsRepository } from "../../repositories/admin/analytics.repositoy";
+import { AdminAnalyticsRepository } from "../../repositories/admin/analytics.repository";
 
 export type DateRange = { from: Date; to: Date };
 export type EarningsGroup = "daily" | "weekly" | "monthly";

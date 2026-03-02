@@ -64,6 +64,7 @@ describe("AdminUserController", () => {
       expect.objectContaining({ success: true, message: "User Created" }),
     );
   });
+
   it("getAllUsers -> passes role into filter", async () => {
     const req = mockReq({
       query: { page: "1", size: "10", search: "mi", role: "user" },

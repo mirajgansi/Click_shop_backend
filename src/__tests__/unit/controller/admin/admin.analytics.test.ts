@@ -1,5 +1,5 @@
 import { AdminAnalyticsController } from "../../../../controllers/admin/admin.analytics.controller";
-import { AdminAnalyticsService } from "../../../../services/admin/aalytics.service";
+import { AdminAnalyticsService } from "../../../../services/admin/analytics.service";
 
 function mockRes() {
   const res: any = {};

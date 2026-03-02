@@ -1,6 +1,6 @@
 import { OrderModel } from "../../../../models/order.model";
 import { ProductModel } from "../../../../models/product.model";
-import { AdminAnalyticsRepository } from "../../../../repositories/admin/analytics.repositoy";
+import { AdminAnalyticsRepository } from "../../../../repositories/admin/analytics.repository";
 
 jest.mock("../../../../models/order.model", () => ({
   OrderModel: {

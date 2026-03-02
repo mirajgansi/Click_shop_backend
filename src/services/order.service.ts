@@ -460,7 +460,6 @@ export class OrderService {
         return order;
       });
 
-      // ✅ SEND NOTIFICATION AFTER COMMIT
       const orderIdStr = updated._id.toString();
       const userIdStr = updated.userId.toString();
 

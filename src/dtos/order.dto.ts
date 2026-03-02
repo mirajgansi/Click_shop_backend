@@ -1,11 +1,6 @@
 import { z } from "zod";
 import { OrderSchema, OrderStatusSchema } from "../types/order";
 
-/**
- * CREATE ORDER DTO
- *  Client should only send checkout info (payment/shipping/notes)
- *  Client should NOT send items/subtotal/total (backend computes from cart)
- */
 export const CreateOrderDto = OrderSchema.pick({
   shippingFee: true,
   shippingAddress: true,
@@ -16,11 +11,6 @@ export const CreateOrderDto = OrderSchema.pick({
 });
 
 export const UpdateOrderDto = OrderSchema.partial();
-
-/**
- * ADMIN: Update Status DTO (recommended)
- *  safer than allowing full partial updates
- */
 
 export const UpdateOrderStatusDto = z
   .object({

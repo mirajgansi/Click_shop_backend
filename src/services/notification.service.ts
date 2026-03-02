@@ -24,13 +24,11 @@ export class NotificationService {
 
     const userId = saved.to.toString();
 
-    // ✅ realtime emit
     const io = getIO();
     io.to(userId).emit("notification", saved);
 
-    // ✅ send FCM only if user offline
     const userRepo = new UserRepository();
-    const user = await userRepo.getUserById(userId); // must return fcmToken
+    const user = await userRepo.getUserById(userId);
     const token = user?.fcmToken;
 
     if (!isUserOnline(userId) && token) {

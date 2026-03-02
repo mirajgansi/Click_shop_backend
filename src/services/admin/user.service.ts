@@ -19,8 +19,7 @@ export class AdminUserService {
     if (usernameCheck) {
       throw new HttpError(403, "Username already in use");
     }
-    // hash password
-    const hashedPassword = await bcryptjs.hash(data.password, 10); // 10 - complexity
+    const hashedPassword = await bcryptjs.hash(data.password, 10);
     data.password = hashedPassword;
 
     const newUser = await userRepository.createUser(data);
@@ -46,7 +45,7 @@ export class AdminUserService {
       page: currentPage,
       size: pageSize,
       search: currentSearch,
-      filter, // ✅ pass it down
+      filter,
     });
 
     const pagination = {
