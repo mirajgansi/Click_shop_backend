@@ -48,11 +48,15 @@ export class OrderRepository {
     search?: string;
     tab?: string;
   }) {
+    const safePage = Math.max(1, Number(page) || 1);
+    const safeSize = Math.min(100, Math.max(1, Number(size) || 10));
+    const skip = (safePage - 1) * safeSize;
+
     const filter: any = {};
     const t = (tab ?? "all").toLowerCase().trim();
     const q = (search ?? "").trim();
 
-    // search (adjust fields to match your schema)
+    // search
     if (q) {
       filter.$or = [
         { "shippingAddress.userName": { $regex: q, $options: "i" } },
@@ -61,13 +65,23 @@ export class OrderRepository {
       ];
     }
 
-    // tabs → real filters
+    // tabs
     switch (t) {
       case "unpaid":
         filter.paymentStatus = "unpaid";
         break;
 
+      case "paid":
+        filter.paymentStatus = "paid";
+        break;
+
       case "pending":
+      case "shipped":
+      case "delivered":
+      case "cancelled":
+        filter.status = t; // matches your enum values exactly
+        break;
+
       case "open":
         filter.status = { $nin: ["delivered", "cancelled"] };
         break;
@@ -78,14 +92,14 @@ export class OrderRepository {
 
       case "all":
       default:
-        // no extra filter
         break;
     }
 
-    const skip = (page - 1) * size;
-
     const [orders, total] = await Promise.all([
-      OrderModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(size),
+      OrderModel.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(safeSize),
       OrderModel.countDocuments(filter),
     ]);
 

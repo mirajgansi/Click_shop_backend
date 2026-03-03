@@ -9,6 +9,7 @@ interface QueryParams {
   page?: string;
   size?: string;
   search?: string;
+  tab?: string;
 }
 
 export class OrderController {
@@ -84,12 +85,13 @@ export class OrderController {
   // ADMIN: GET /api/orders
   async getAllOrders(req: Request, res: Response) {
     try {
-      const { page, size, search }: QueryParams = req.query;
+      const { page, size, search, tab }: QueryParams = req.query;
 
       const orders = await orderService.getAllOrders({
         page,
         size,
         search,
+        tab,
       });
 
       return res.status(200).json({
