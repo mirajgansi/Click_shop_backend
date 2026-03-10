@@ -113,7 +113,7 @@ describe("OrderRepository (unit)", () => {
     expect(OrderModel.find).toHaveBeenCalledWith({ paymentStatus: "unpaid" });
   });
 
-  it("findAll tab=pending/open should filter status not in delivered/cancelled", async () => {
+  it("findAll tab=pending should filter status='pending'", async () => {
     const limitMock = jest.fn().mockResolvedValue([]);
     const skipMock = jest.fn().mockReturnValue({ limit: limitMock });
     const sortMock = jest.fn().mockReturnValue({ skip: skipMock });
@@ -122,6 +122,19 @@ describe("OrderRepository (unit)", () => {
     (OrderModel.countDocuments as jest.Mock).mockResolvedValue(0);
 
     await repo.findAll({ page: 1, size: 10, tab: "pending" });
+
+    expect(OrderModel.find).toHaveBeenCalledWith({ status: "pending" });
+  });
+
+  it("findAll tab=open should filter status not in delivered/cancelled", async () => {
+    const limitMock = jest.fn().mockResolvedValue([]);
+    const skipMock = jest.fn().mockReturnValue({ limit: limitMock });
+    const sortMock = jest.fn().mockReturnValue({ skip: skipMock });
+
+    (OrderModel.find as jest.Mock).mockReturnValue({ sort: sortMock });
+    (OrderModel.countDocuments as jest.Mock).mockResolvedValue(0);
+
+    await repo.findAll({ page: 1, size: 10, tab: "open" });
 
     expect(OrderModel.find).toHaveBeenCalledWith({
       status: { $nin: ["delivered", "cancelled"] },
